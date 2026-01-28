@@ -1,0 +1,18 @@
+package(
+    default_applicable_licenses = ["//:package_license"],
+    default_visibility = ["//visibility:public"],
+)
+
+exports_files([
+    "defs.bzl",
+    "providers.bzl",
+    "create_project.tcl.template",
+    "synth_optimize.tcl.template",
+    "placement.tcl.template",
+    "place_optimize.tcl.template",
+    "route.tcl.template",
+    "write_bitstream.tcl.template",
+    "xsim_test.tcl.template",
+    "create_ip_block.tcl.template",
+    "xilinx_keyfile.txt",
+])
