@@ -13,7 +13,7 @@
 # limitations under the License.
 
 load("@bazel_skylib//rules:write_file.bzl", "write_file")
-load("@rules_cc//cc:defs.bzl", "cc_test")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("@rules_verilator//verilator:defs.bzl", "verilator_cc_library")
 load("@rules_verilator//verilog:defs.bzl", "verilog_library")
 load(
@@ -50,7 +50,6 @@ cc_test(
     srcs = ["johnson_counter_test.cc"],
     deps = [
         ":johnson_counter_verilator",
-        "@googletest//:gtest",
         "@googletest//:gtest_main",
     ],
 )
@@ -135,7 +134,6 @@ cc_test(
     ],
     deps = [
         ":weights_replay_verilator",
-        "@googletest//:gtest",
         "@googletest//:gtest_main",
     ],
 )
