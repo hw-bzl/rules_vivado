@@ -21,6 +21,7 @@ load(
     "vivado_create_ip",
     "vivado_create_project",
     "vivado_flow",
+    "vivado_interface_definition",
     "xsim_test",
 )
 
@@ -261,6 +262,77 @@ vivado_create_project(
     ],
     module = ":weights_replay_and_save_wrapper",
     module_top = "weights_replay_and_save_wrapper",
+    part_number = "xczu28dr-ffvg1517-2-e",
+    tags = ["manual"],
+    xilinx_env = ":xilinx_env.sh",
+)
+
+# Stream FIFO interface example - demonstrates vivado_interface_definition rule
+# This generates the IP-XACT XML files and TCL setup script
+vivado_interface_definition(
+    name = "stream_fifo_interface",
+    interface_name = "stream_fifo_if",
+    vendor = "cruxml.com",
+    library = "interfaces",
+    version = "1.0",
+    signals = {
+        "data": [
+            "width=DATA_WIDTH",
+            "direction=inout",
+            "description=Data payload",
+        ],
+        "valid": [
+            "width=1",
+            "direction=out",
+            "description=Data valid signal",
+        ],
+        "ready": [
+            "width=1",
+            "direction=in",
+            "description=Ready to accept data",
+        ],
+        "last": [
+            "width=1",
+            "direction=out",
+            "description=Last data in transaction",
+        ],
+    },
+)
+
+# The interface verilog source with IP-XACT files as data
+# The TCL setup file is automatically sourced by vivado rules
+verilog_library(
+    name = "stream_fifo_if",
+    srcs = ["stream_fifo_if.sv"],
+    data = [":stream_fifo_interface"],
+)
+
+# Convenience target for IP packaging (no srcs, just brings in deps + data)
+verilog_library(
+    name = "stream_fifo_if_ip_src",
+    data = [":stream_fifo_interface"],
+    deps = [":stream_fifo_if"],
+)
+
+# Module that uses the interface
+verilog_library(
+    name = "stream_fifo",
+    srcs = ["stream_fifo.sv"],
+    deps = [":stream_fifo_if"],
+)
+
+# Testbench
+verilog_library(
+    name = "stream_fifo_tb",
+    srcs = ["stream_fifo_tb.sv"],
+    deps = [":stream_fifo"],
+)
+
+# xsim test - interface IP files are included via verilog_library data
+xsim_test(
+    name = "stream_fifo_xsim_test",
+    module = ":stream_fifo_tb",
+    module_top = "stream_fifo_tb",
     part_number = "xczu28dr-ffvg1517-2-e",
     tags = ["manual"],
     xilinx_env = ":xilinx_env.sh",

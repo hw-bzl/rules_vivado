@@ -122,6 +122,40 @@ xsim_test(
 )
 ```
 
+### `vivado_interface_definition`
+
+Generate IP-XACT interface definition files (bus definition and abstraction definition XML) for custom interfaces:
+
+```starlark
+load("@rules_vivado//vivado:defs.bzl", "vivado_interface_definition")
+
+vivado_interface_definition(
+    name = "my_interface_def",
+    interface_name = "my_interface",
+    vendor = "mycompany.com",
+    library = "interface",
+    version = "1.0",
+    signals = {
+        "valid": ["direction_master=out", "direction_slave=in", "qualifier="],
+        "ready": ["direction_master=in", "direction_slave=out", "qualifier="],
+        "data": ["direction_master=out", "direction_slave=in", "qualifier=data", "width=32"],
+        "addr": ["direction_master=out", "direction_slave=in", "qualifier=address", "width=16"],
+    },
+)
+```
+
+This generates:
+- `my_interface.xml` - Bus definition XML
+- `my_interface_rtl.xml` - Abstraction definition XML
+- `my_interface_if_setup.tcl` - TCL setup file for IP packaging
+
+Signal attributes:
+- `direction_master`: Signal direction for master modport (`in` or `out`)
+- `direction_slave`: Signal direction for slave modport (`in` or `out`)
+- `qualifier`: Signal qualifier (`address`, `data`, `clock`, `reset`, or empty)
+- `width`: Signal width (defaults to 1)
+- `optional`: Whether the signal is optional (`true` or `false`, defaults to `false`)
+
 ## Xilinx Environment
 
 All rules require a `xilinx_env.sh` script that sets up the Vivado environment:
@@ -145,6 +179,7 @@ export XILINXD_LICENSE_FILE=2100@localhost
 - `VivadoPlacementCheckpointInfo` - Placement checkpoint
 - `VivadoRoutingCheckpointInfo` - Routing checkpoint
 - `VivadoIPBlockInfo` - IP block information
+- `VivadoInterfaceInfo` - IP-XACT interface definition files
 
 ## License
 

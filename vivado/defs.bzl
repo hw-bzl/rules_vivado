@@ -1,7 +1,7 @@
 """Defines rules for the Xilinx tool, vivado."""
 
 load("@rules_verilator//verilog:defs.bzl", "VerilogInfo")
-load("//vivado:providers.bzl", "VivadoIPBlockInfo", "VivadoPlacementCheckpointInfo", "VivadoRoutingCheckpointInfo", "VivadoSynthCheckpointInfo")
+load("//vivado:providers.bzl", "VivadoIPBlockInfo", "VivadoInterfaceInfo", "VivadoPlacementCheckpointInfo", "VivadoRoutingCheckpointInfo", "VivadoSynthCheckpointInfo")
 
 def run_tcl_template(ctx, template, substitutions, xilinx_env, input_files, output_files, post_processing_command = ""):
     """Runs a tcl template in vivado.
@@ -935,7 +935,13 @@ def _vivado_create_ip_impl(ctx):
 
     return [
         ip_block_outputs[0],
-        VivadoIPBlockInfo(repo = [ip_dir] + ip_block_dirs, vendor = ctx.attr.ip_vendor, library = ctx.attr.ip_library, version = ctx.attr.ip_version, module_top = ctx.attr.module_top),
+        VivadoIPBlockInfo(
+            repo = [ip_dir] + ip_block_dirs,
+            vendor = ctx.attr.ip_vendor,
+            library = ctx.attr.ip_library,
+            version = ctx.attr.ip_version,
+            module_top = ctx.attr.module_top,
+        ),
     ]
 
 vivado_create_ip = rule(
@@ -989,6 +995,365 @@ vivado_create_ip = rule(
         "part_number": attr.string(
             doc = "The targeted xilinx part.",
             mandatory = True,
+        ),
+        "xilinx_env": attr.label(
+            doc = "A shell script to source the vivado environment and " +
+                  "point to license server",
+            mandatory = True,
+            allow_single_file = [".sh"],
+        ),
+    },
+    provides = [
+        DefaultInfo,
+        VivadoIPBlockInfo,
+    ],
+)
+
+def _generate_port_xml(signal):
+    """Generate XML for a single port in the abstraction definition.
+
+    Args:
+        signal: A dict with keys: name, direction_master, direction_slave, qualifier, width, optional
+
+    Returns:
+        XML string for the port definition.
+    """
+    logical_name = signal["name"].upper()
+    presence = "optional" if signal.get("optional", False) else "required"
+
+    # Build qualifier section if needed
+    qualifier_xml = ""
+    qualifier = signal.get("qualifier", "")
+    if qualifier == "address":
+        qualifier_xml = """
+                <spirit:qualifier>
+                    <spirit:isAddress>true</spirit:isAddress>
+                </spirit:qualifier>"""
+    elif qualifier == "data":
+        qualifier_xml = """
+                <spirit:qualifier>
+                    <spirit:isData>true</spirit:isData>
+                </spirit:qualifier>"""
+    elif qualifier == "clock":
+        qualifier_xml = """
+                <spirit:qualifier>
+                    <spirit:isClock>true</spirit:isClock>
+                </spirit:qualifier>"""
+    elif qualifier == "reset":
+        qualifier_xml = """
+                <spirit:qualifier>
+                    <spirit:isReset>true</spirit:isReset>
+                </spirit:qualifier>"""
+
+    # Width element (only for single-bit signals without explicit width)
+    width = signal.get("width", 1)
+    width_xml = ""
+    if width == 1:
+        width_xml = """
+                    <spirit:width>1</spirit:width>"""
+    elif type(width) == type(""):
+        # Parameterized width - don't include width element
+        pass
+    else:
+        width_xml = """
+                    <spirit:width>{}</spirit:width>""".format(width)
+
+    dir_master = signal.get("direction_master", "out")
+    dir_slave = signal.get("direction_slave", "in")
+
+    return """
+        <spirit:port>
+            <spirit:logicalName>{logical_name}</spirit:logicalName>
+            <spirit:description>{name} signal</spirit:description>
+            <spirit:wire>{qualifier_xml}
+                <spirit:onMaster>
+                    <spirit:presence>{presence}</spirit:presence>{width_xml}
+                    <spirit:direction>{dir_master}</spirit:direction>
+                </spirit:onMaster>
+                <spirit:onSlave>
+                    <spirit:presence>{presence}</spirit:presence>{width_xml}
+                    <spirit:direction>{dir_slave}</spirit:direction>
+                </spirit:onSlave>
+            </spirit:wire>
+        </spirit:port>""".format(
+        logical_name = logical_name,
+        name = signal["name"],
+        qualifier_xml = qualifier_xml,
+        presence = presence,
+        width_xml = width_xml,
+        dir_master = dir_master,
+        dir_slave = dir_slave,
+    )
+
+def _parse_signal_attrs(signal_name, attrs_list):
+    """Parse a list of 'key=value' strings into a signal dict.
+
+    Args:
+        signal_name: The name of the signal
+        attrs_list: List of strings like ['direction_master=out', 'qualifier=address']
+
+    Returns:
+        Dict with signal attributes
+    """
+    signal = {"name": signal_name}
+    for attr in attrs_list:
+        if "=" in attr:
+            key, value = attr.split("=", 1)
+            key = key.strip()
+            value = value.strip()
+            if key == "optional":
+                signal[key] = value.lower() == "true"
+            elif key == "width":
+                # Width can be an integer or a parameter name (string)
+                if value.isdigit():
+                    signal[key] = int(value)
+                else:
+                    signal[key] = value  # Keep as string for parameterized widths
+            else:
+                signal[key] = value
+    return signal
+
+def _vivado_interface_definition_impl(ctx):
+    """Implementation of vivado_interface_definition rule."""
+    name = ctx.attr.interface_name
+    vendor = ctx.attr.vendor
+    library = ctx.attr.library
+    version = ctx.attr.version
+    display_name = name.replace("_", " ").title() + " Interface"
+
+    # Generate ports XML from signals
+    ports_xml = ""
+    for signal_name, attrs_list in ctx.attr.signals.items():
+        signal = _parse_signal_attrs(signal_name, attrs_list)
+        ports_xml += _generate_port_xml(signal)
+
+    # Generate bus definition XML
+    bus_def_file = ctx.actions.declare_file("{}.xml".format(name))
+    ctx.actions.expand_template(
+        template = ctx.file.bus_definition_template,
+        output = bus_def_file,
+        substitutions = {
+            "{{VENDOR}}": vendor,
+            "{{LIBRARY}}": library,
+            "{{NAME}}": name,
+            "{{VERSION}}": version,
+            "{{DIRECT_CONNECTION}}": "true" if ctx.attr.direct_connection else "false",
+            "{{IS_ADDRESSABLE}}": "true" if ctx.attr.is_addressable else "false",
+            "{{MAX_MASTERS}}": str(ctx.attr.max_masters),
+            "{{MAX_SLAVES}}": str(ctx.attr.max_slaves),
+            "{{DESCRIPTION}}": ctx.attr.description if ctx.attr.description else display_name,
+            "{{DISPLAY_NAME}}": display_name,
+        },
+    )
+
+    # Generate abstraction definition XML
+    abs_def_file = ctx.actions.declare_file("{}_rtl.xml".format(name))
+    ctx.actions.expand_template(
+        template = ctx.file.abstraction_definition_template,
+        output = abs_def_file,
+        substitutions = {
+            "{{VENDOR}}": vendor,
+            "{{LIBRARY}}": library,
+            "{{NAME}}": name,
+            "{{VERSION}}": version,
+            "{{DISPLAY_NAME}}": display_name,
+            "{{PORTS_XML}}": ports_xml,
+        },
+    )
+
+    # Generate TCL setup file
+    setup_tcl_file = ctx.actions.declare_file("{}_if_setup.tcl".format(name))
+    version_underscore = version.replace(".", "_")
+    ctx.actions.expand_template(
+        template = ctx.file.interface_setup_template,
+        output = setup_tcl_file,
+        substitutions = {
+            "{{VENDOR}}": vendor,
+            "{{LIBRARY}}": library,
+            "{{NAME}}": name,
+            "{{VERSION}}": version,
+            "{{VERSION_UNDERSCORE}}": version_underscore,
+            "{{SRC_DIR}}": bus_def_file.dirname,
+        },
+    )
+
+    outputs = [bus_def_file, abs_def_file, setup_tcl_file]
+
+    return [
+        DefaultInfo(files = depset(outputs)),
+        VivadoInterfaceInfo(
+            name = name,
+            vendor = vendor,
+            library = library,
+            version = version,
+            bus_definition = bus_def_file,
+            abstraction_definition = abs_def_file,
+            setup_tcl = setup_tcl_file,
+        ),
+    ]
+
+vivado_interface_definition = rule(
+    implementation = _vivado_interface_definition_impl,
+    doc = "Generate Vivado IP-XACT interface definition files (bus definition and abstraction definition XML)",
+    attrs = {
+        "interface_name": attr.string(
+            doc = "The name of the interface (e.g., 'hbm_reader').",
+            mandatory = True,
+        ),
+        "vendor": attr.string(
+            doc = "The vendor VLNV component (e.g., 'mycompany.com').",
+            mandatory = True,
+        ),
+        "library": attr.string(
+            doc = "The library VLNV component (e.g., 'interface').",
+            default = "interface",
+        ),
+        "version": attr.string(
+            doc = "The version VLNV component (e.g., '1.0').",
+            default = "1.0",
+        ),
+        "signals": attr.string_list_dict(
+            doc = """Dictionary of signal definitions. Each signal should have:
+                - name: Signal name
+                - direction_master: 'in' or 'out' for master modport
+                - direction_slave: 'in' or 'out' for slave modport
+                - qualifier: 'address', 'data', 'clock', 'reset', or '' (optional)
+                - width: Signal width (optional, defaults to 1)
+                - optional: 'true' or 'false' (optional, defaults to 'false')
+            """,
+            mandatory = True,
+        ),
+        "description": attr.string(
+            doc = "Description for the interface.",
+            default = "",
+        ),
+        "direct_connection": attr.bool(
+            doc = "Whether direct connections are allowed.",
+            default = True,
+        ),
+        "is_addressable": attr.bool(
+            doc = "Whether the interface is addressable.",
+            default = True,
+        ),
+        "max_masters": attr.int(
+            doc = "Maximum number of masters.",
+            default = 1,
+        ),
+        "max_slaves": attr.int(
+            doc = "Maximum number of slaves.",
+            default = 1,
+        ),
+        "bus_definition_template": attr.label(
+            doc = "The bus definition XML template.",
+            default = "//vivado:bus_definition.xml.template",
+            allow_single_file = [".template"],
+        ),
+        "abstraction_definition_template": attr.label(
+            doc = "The abstraction definition XML template.",
+            default = "//vivado:abstraction_definition.xml.template",
+            allow_single_file = [".template"],
+        ),
+        "interface_setup_template": attr.label(
+            doc = "The interface setup TCL template.",
+            default = "//vivado:interface_setup.tcl.template",
+            allow_single_file = [".template"],
+        ),
+    },
+    provides = [
+        DefaultInfo,
+        VivadoInterfaceInfo,
+    ],
+)
+
+def _vivado_create_interface_ip_impl(ctx):
+    """Implementation of vivado_create_interface_ip rule."""
+    interface_info = ctx.attr.interface[VivadoInterfaceInfo]
+
+    ip_dir = ctx.actions.declare_directory(ctx.label.name)
+
+    display_name = interface_info.name.replace("_", " ").title() + " Interface"
+    description = ctx.attr.description if ctx.attr.description else display_name
+    vendor_display_name = ctx.attr.vendor_display_name if ctx.attr.vendor_display_name else interface_info.vendor
+
+    # Collect HDL source files from the module if provided
+    hdl_source_content = ""
+    all_files = []
+    if ctx.attr.module:
+        all_files, hdl_source_content, _, _ = generate_file_load_tcl(ctx.attr.module)
+
+    substitutions = {
+        "{{ABSTRACTION_DEFINITION_BASENAME}}": interface_info.abstraction_definition.basename,
+        "{{ABSTRACTION_DEFINITION_FILE}}": interface_info.abstraction_definition.path,
+        "{{BUS_DEFINITION_BASENAME}}": interface_info.bus_definition.basename,
+        "{{BUS_DEFINITION_FILE}}": interface_info.bus_definition.path,
+        "{{DESCRIPTION}}": description,
+        "{{DISPLAY_NAME}}": display_name,
+        "{{HDL_SOURCE_CONTENT}}": hdl_source_content,
+        "{{INTERFACE_NAME}}": interface_info.name,
+        "{{IP_LIBRARY}}": interface_info.library,
+        "{{IP_OUTPUT_DIR}}": ip_dir.path,
+        "{{IP_VENDOR}}": interface_info.vendor,
+        "{{IP_VERSION}}": interface_info.version,
+        "{{PART_NUMBER}}": ctx.attr.part_number,
+        "{{VENDOR_DISPLAY_NAME}}": vendor_display_name,
+    }
+
+    input_files = [
+        interface_info.bus_definition,
+        interface_info.abstraction_definition,
+    ] + all_files
+
+    outputs = [ip_dir]
+
+    default_info = run_tcl_template(
+        ctx,
+        ctx.file.create_interface_ip_template,
+        substitutions,
+        ctx.file.xilinx_env,
+        input_files,
+        outputs,
+    )
+
+    return [
+        default_info[0],
+        VivadoIPBlockInfo(
+            repo = [ip_dir],
+            vendor = interface_info.vendor,
+            library = interface_info.library,
+            version = interface_info.version,
+            module_top = interface_info.name,
+        ),
+    ]
+
+vivado_create_interface_ip = rule(
+    implementation = _vivado_create_interface_ip_impl,
+    doc = "Package a Vivado interface definition as an IP block. Unlike vivado_create_ip, this does not require a top module.",
+    attrs = {
+        "interface": attr.label(
+            doc = "The interface definition to package.",
+            providers = [VivadoInterfaceInfo],
+            mandatory = True,
+        ),
+        "module": attr.label(
+            doc = "The verilog_library containing the interface source file(s).",
+            providers = [VerilogInfo],
+        ),
+        "part_number": attr.string(
+            doc = "The targeted xilinx part.",
+            mandatory = True,
+        ),
+        "description": attr.string(
+            doc = "Description for the IP block.",
+            default = "",
+        ),
+        "vendor_display_name": attr.string(
+            doc = "Display name for the vendor.",
+            default = "",
+        ),
+        "create_interface_ip_template": attr.label(
+            doc = "The TCL template for creating interface IP.",
+            default = "//vivado:create_interface_ip.tcl.template",
+            allow_single_file = [".template"],
         ),
         "xilinx_env": attr.label(
             doc = "A shell script to source the vivado environment and " +
