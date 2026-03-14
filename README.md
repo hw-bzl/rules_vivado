@@ -4,14 +4,15 @@ Bazel rules for Xilinx Vivado FPGA synthesis, placement, routing, and bitstream 
 
 ## Overview
 
-`rules_vivado` provides Bazel rules to build FPGA designs using Xilinx Vivado. It integrates with `rules_verilator` to share the `VerilogInfo` provider, allowing the same Verilog/SystemVerilog libraries to be used for both simulation and synthesis.
+`rules_vivado` provides Bazel rules to build FPGA designs using Xilinx Vivado.
 
 ## Setup
 
 Add the following to your `MODULE.bazel`:
 
 ```starlark
-bazel_dep(name = "rules_verilator", version = "0.1.0")
+bazel_dep(name = "rules_verilog", version = "0.1.0")
+bazel_dep(name = "rules_verilator", version = "0.2.1")
 bazel_dep(name = "rules_vivado", version = "0.1.0")
 ```
 
@@ -19,10 +20,10 @@ bazel_dep(name = "rules_vivado", version = "0.1.0")
 
 ### `verilog_library`
 
-Define Verilog/SystemVerilog modules using `rules_verilator`:
+Define Verilog/SystemVerilog modules using `rules_verilog`:
 
 ```starlark
-load("@rules_verilator//verilog:defs.bzl", "verilog_library")
+load("@rules_verilog//verilog:defs.bzl", "verilog_library")
 
 verilog_library(
     name = "my_design",
@@ -255,7 +256,7 @@ export XILINXD_LICENSE_FILE=2100@localhost
 
 ## Providers
 
-### From `rules_verilator`
+### From `rules_verilog`
 
 - `VerilogInfo` - Verilog module information (sources, dependencies)
 

@@ -1,13 +1,13 @@
 module(
     name = "rules_vivado",
-    version = "0.1.0",
+    version = "0.1.1",
     bazel_compatibility = [">=7.0.0"],
     compatibility_level = 0,
     repo_name = "rules_vivado",
 )
 
-bazel_dep(name = "verilator", version = "5.036.bcr.3")
-bazel_dep(name = "rules_verilator", version = "0.1.0")
+bazel_dep(name = "rules_verilog", version = "0.1.0")
+bazel_dep(name = "rules_verilator", version = "0.2.1")
 bazel_dep(name = "platforms", version = "1.0.0")
 bazel_dep(name = "rules_license", version = "1.0.0")
 bazel_dep(name = "bazel_skylib", version = "1.8.2")

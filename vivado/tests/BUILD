@@ -16,7 +16,7 @@ load("@bazel_skylib//rules:write_file.bzl", "write_file")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
 load("@rules_verilator//verilator:defs.bzl", "verilator_cc_library")
-load("@rules_verilator//verilog:defs.bzl", "verilog_library")
+load("@rules_verilog//verilog:defs.bzl", "verilog_library")
 load(
     "//vivado:defs.bzl",
     "vivado_create_interface_ip",
