@@ -1,5 +1,8 @@
 # rules_vivado
 
+[![BCR](https://img.shields.io/badge/BCR-rules_vivado-green?logo=bazel)](https://registry.bazel.build/modules/rules_vivado)
+[![CI](https://github.com/hw-bzl/rules_vivado/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/hw-bzl/rules_vivado/actions/workflows/ci.yml)
+
 Bazel rules for Xilinx Vivado FPGA synthesis, placement, routing, and bitstream generation.
 
 ## Overview
