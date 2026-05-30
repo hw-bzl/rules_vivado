@@ -9,6 +9,7 @@ __pycache__/
 # Bazel
 bazel-*
 MODULE.bazel.lock
+user.bazelrc
 
 # Distribution / packaging
 .Python

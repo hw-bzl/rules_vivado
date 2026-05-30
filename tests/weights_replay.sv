@@ -13,7 +13,7 @@ module weights_replay #(
 
 `ifdef __VERILATOR__
   initial begin
-    $readmemh("./vivado/tests/test.mem", weights);
+    $readmemh("./tests/test.mem", weights);
   end
 `else
   initial begin

@@ -1,0 +1,55 @@
+load("//vivado:toolchain.bzl", "TOOLCHAIN_TYPE", "vivado_toolchain")
+
+package(
+    default_applicable_licenses = ["//:package_license"],
+    default_visibility = ["//visibility:public"],
+)
+
+# One vivado_toolchain instance per Xilinx env script. Each `toolchain()`
+# wrapper gates on a `//vivado/constraints/version:{ver}` constraint_value via
+# `exec_compatible_with`, so toolchain resolution picks the right env from the
+# active exec platform. Set `--platforms` (or use the `with_vivado_version`
+# transition in `//tests:transition.bzl`) to switch versions.
+
+vivado_toolchain(
+    name = "vivado_2024_1",
+    version = "2024.01",
+    xilinx_env = "xilinx_env.sh",
+)
+
+toolchain(
+    name = "vivado_toolchain_2024_1",
+    exec_compatible_with = ["//vivado/constraints/version:2024.1"],
+    toolchain = ":vivado_2024_1",
+    toolchain_type = TOOLCHAIN_TYPE,
+)
+
+vivado_toolchain(
+    name = "vivado_2025_1",
+    version = "2025.01",
+    xilinx_env = "xilinx_env_2025_1.sh",
+)
+
+toolchain(
+    name = "vivado_toolchain_2025_1",
+    exec_compatible_with = ["//vivado/constraints/version:2025.1"],
+    toolchain = ":vivado_2025_1",
+    toolchain_type = TOOLCHAIN_TYPE,
+)
+
+# Per-version execution platforms. Inheriting from @platforms//host carries
+# OS/CPU constraints so non-vivado actions can still pick a sensible platform.
+# Registered as exec platforms in MODULE.bazel so toolchain resolution finds
+# the matching one for each vivado_* action automatically.
+
+platform(
+    name = "vivado_2024_1_platform",
+    constraint_values = ["//vivado/constraints/version:2024.1"],
+    parents = ["@platforms//host"],
+)
+
+platform(
+    name = "vivado_2025_1_platform",
+    constraint_values = ["//vivado/constraints/version:2025.1"],
+    parents = ["@platforms//host"],
+)

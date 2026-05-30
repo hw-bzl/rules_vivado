@@ -1,0 +1,25 @@
+load("//vivado/private:versions.bzl", "VIVADO_VERSIONS")
+
+package(
+    default_applicable_licenses = ["//:package_license"],
+    default_visibility = ["//visibility:public"],
+)
+
+# Per-version constraint. A platform that declares e.g.
+# `constraint_values = ["//vivado/constraints/version:2024.2"]` will be picked
+# up by toolchain resolution when a `toolchain()` registration is gated on the
+# same constraint via `exec_compatible_with`. Target names match the real
+# Vivado version string (dotted) so they read obviously next to a part
+# number; platform/toolchain names alongside them use the underscored form
+# because Bazel labels rarely carry dots and tooling is happier without them.
+constraint_setting(
+    name = "version",
+)
+
+[
+    constraint_value(
+        name = v,
+        constraint_setting = ":version",
+    )
+    for v in VIVADO_VERSIONS
+]

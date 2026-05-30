@@ -1,0 +1,33 @@
+load("@rules_python//python:py_binary.bzl", "py_binary")
+
+package(
+    default_applicable_licenses = ["//:package_license"],
+)
+
+exports_files([
+    "create_project.tcl.template",
+    "synth_optimize.tcl.template",
+    "placement.tcl.template",
+    "place_optimize.tcl.template",
+    "route.tcl.template",
+    "write_bitstream.tcl.template",
+    "xsim_test.tcl.template",
+    "create_ip_block.tcl.template",
+    "create_interface_ip.tcl.template",
+    "bus_definition.xml.template",
+    "abstraction_definition.xml.template",
+    "interface_setup.tcl.template",
+    "xilinx_keyfile.txt",
+])
+
+py_binary(
+    name = "parse_sv_interface",
+    srcs = ["parse_sv_interface.py"],
+    visibility = ["//visibility:public"],
+)
+
+py_binary(
+    name = "generate_interface_xml",
+    srcs = ["generate_interface_xml.py"],
+    visibility = ["//visibility:public"],
+)

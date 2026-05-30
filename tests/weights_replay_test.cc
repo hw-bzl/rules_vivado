@@ -36,7 +36,7 @@ TEST_F(WeightsReplayTest, load_and_compare) {
   std::string line;
   std::vector<int> expected_values;
   // Read the weights file to compare against.
-  std::ifstream file("vivado/tests/test.mem");
+  std::ifstream file("tests/test.mem");
   EXPECT_TRUE(file.is_open());
   while (std::getline(file, line)) {
     int x = std::stoi(line, nullptr, 16);

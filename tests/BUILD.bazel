@@ -16,7 +16,7 @@ load("@bazel_skylib//rules:write_file.bzl", "write_file")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
 load("@rules_verilator//verilator:defs.bzl", "verilator_cc_library")
-load("@rules_verilator//verilog:defs.bzl", "verilog_library")
+load("@rules_verilog//verilog:defs.bzl", "verilog_library")
 load(
     "//vivado:defs.bzl",
     "vivado_create_interface_ip",
@@ -26,11 +26,15 @@ load(
     "vivado_interface_definition",
     "xsim_test",
 )
+load(":transition.bzl", "with_vivado_version")
 
 package(
     default_applicable_licenses = ["//:package_license"],
     default_visibility = ["//visibility:private"],
 )
+
+# The Vivado toolchain wired up in //tests/toolchains is registered via
+# MODULE.bazel and resolved automatically by every vivado_* rule below.
 
 test_suite(
     name = "all_xsim_tests",
@@ -80,7 +84,6 @@ xsim_test(
     part_number = "xczu28dr-ffvg1517-2-e",
     tags = ["manual"],
     with_waveform = True,
-    xilinx_env = ":xilinx_env.sh",
 )
 
 verilog_library(
@@ -103,7 +106,6 @@ vivado_flow(
     module_top = "johnson_counter_top",
     part_number = "xczu28dr-ffvg1517-2-e",
     tags = ["manual"],
-    xilinx_env = ":xilinx_env.sh",
 )
 
 vivado_create_project(
@@ -112,7 +114,6 @@ vivado_create_project(
     module_top = "johnson_counter_top",
     part_number = "xczu28dr-ffvg1517-2-e",
     tags = ["manual"],
-    xilinx_env = ":xilinx_env.sh",
 )
 
 write_file(
@@ -181,7 +182,6 @@ vivado_create_ip(
     module_top = "weights_replay",
     part_number = "xczu28dr-ffvg1517-2-e",
     tags = ["manual"],
-    xilinx_env = ":xilinx_env.sh",
 )
 
 vivado_flow(
@@ -193,7 +193,6 @@ vivado_flow(
     module_top = "weights_replay_top",
     part_number = "xczu28dr-ffvg1517-2-e",
     tags = ["manual"],
-    xilinx_env = ":xilinx_env.sh",
 )
 
 vivado_create_project(
@@ -205,7 +204,6 @@ vivado_create_project(
     module_top = "weights_replay_top",
     part_number = "xczu28dr-ffvg1517-2-e",
     tags = ["manual"],
-    xilinx_env = ":xilinx_env.sh",
 )
 
 verilog_library(
@@ -225,7 +223,6 @@ vivado_create_ip(
     module_top = "weights_ram",
     part_number = "xczu28dr-ffvg1517-2-e",
     tags = ["manual"],
-    xilinx_env = ":xilinx_env.sh",
 )
 
 verilog_library(
@@ -248,7 +245,6 @@ vivado_create_ip(
     module_top = "weights_replay_and_save",
     part_number = "xczu28dr-ffvg1517-2-e",
     tags = ["manual"],
-    xilinx_env = ":xilinx_env.sh",
 )
 
 verilog_library(
@@ -267,7 +263,6 @@ xsim_test(
     module_top = "weights_replay_and_save_tb",
     part_number = "xczu28dr-ffvg1517-2-e",
     tags = ["manual"],
-    xilinx_env = ":xilinx_env.sh",
 )
 
 verilog_library(
@@ -286,7 +281,6 @@ vivado_create_project(
     module_top = "weights_replay_and_save_wrapper",
     part_number = "xczu28dr-ffvg1517-2-e",
     tags = ["manual"],
-    xilinx_env = ":xilinx_env.sh",
 )
 
 # Stream FIFO interface example - demonstrates vivado_interface_definition rule
@@ -336,7 +330,6 @@ xsim_test(
     module_top = "stream_fifo_tb",
     part_number = "xczu28dr-ffvg1517-2-e",
     tags = ["manual"],
-    xilinx_env = ":xilinx_env.sh",
 )
 
 # ============================================================================
@@ -356,7 +349,6 @@ xsim_test(
     module_top = "error_detection_tb",
     part_number = "xczu28dr-ffvg1517-2-e",
     tags = ["manual"],
-    xilinx_env = ":xilinx_env.sh",
 )
 
 verilog_library(
@@ -371,7 +363,6 @@ xsim_test(
     module_top = "assert_detection_tb",
     part_number = "xczu28dr-ffvg1517-2-e",
     tags = ["manual"],
-    xilinx_env = ":xilinx_env.sh",
 )
 
 # Expect-failure wrapper tests - these PASS when the underlying xsim test FAILs
@@ -392,8 +383,15 @@ sh_test(
 )
 
 # ============================================================================
-# BRAM Read/Write Splitter - separate read and write interfaces for BRAM
+# BRAM Read/Write Splitter - separate read and write interfaces for BRAM.
+# Every rule below is `target_compatible_with` `//vivado/settings:version_2025.1`
+# (via the _REQUIRES_VIVADO_2025_1 select) and tagged manual, so they don't get
+# picked up by `//...` on their own. Build them through the `:all_bram_2025_1`
+# wrapper at the bottom of this file, which uses `with_vivado_version` to
+# transition the version flag + exec platform for the whole group in one shot.
 # ============================================================================
+
+_REQUIRES_VIVADO_2025_1 = ["//vivado/constraints/version:2025.1"]
 
 # Read-only BRAM interface definition (IP-XACT)
 vivado_interface_definition(
@@ -402,6 +400,8 @@ vivado_interface_definition(
     description = "Read-only BRAM interface with address, enable, data, and valid",
     interface_name = "bram_read_only_if",
     library = "interfaces",
+    tags = ["manual"],
+    target_compatible_with = _REQUIRES_VIVADO_2025_1,
     vendor = "test_vendor",
     version = "1.0",
 )
@@ -413,6 +413,8 @@ vivado_interface_definition(
     description = "Write-only BRAM interface with address, enable, byte-write-enable, and data",
     interface_name = "bram_write_only_if",
     library = "interfaces",
+    tags = ["manual"],
+    target_compatible_with = _REQUIRES_VIVADO_2025_1,
     vendor = "test_vendor",
     version = "1.0",
 )
@@ -447,7 +449,7 @@ vivado_create_interface_ip(
     module = ":bram_read_only_if",
     part_number = "xczu28dr-ffvg1517-2-e",
     tags = ["manual"],
-    xilinx_env = ":xilinx_env_2025_1.sh",
+    target_compatible_with = _REQUIRES_VIVADO_2025_1,
 )
 
 vivado_create_interface_ip(
@@ -456,7 +458,7 @@ vivado_create_interface_ip(
     module = ":bram_write_only_if",
     part_number = "xczu28dr-ffvg1517-2-e",
     tags = ["manual"],
-    xilinx_env = ":xilinx_env_2025_1.sh",
+    target_compatible_with = _REQUIRES_VIVADO_2025_1,
 )
 
 # IP wrapper with flat ports and X_INTERFACE directives
@@ -480,7 +482,7 @@ vivado_create_ip(
     module_top = "bram_read_write_splitter_wrapper",
     part_number = "xczu28dr-ffvg1517-2-e",
     tags = ["manual"],
-    xilinx_env = ":xilinx_env_2025_1.sh",
+    target_compatible_with = _REQUIRES_VIVADO_2025_1,
 )
 
 # ============================================================================
@@ -504,7 +506,7 @@ vivado_create_ip(
     module_top = "test_reader",
     part_number = "xczu28dr-ffvg1517-2-e",
     tags = ["manual"],
-    xilinx_env = ":xilinx_env_2025_1.sh",
+    target_compatible_with = _REQUIRES_VIVADO_2025_1,
 )
 
 # Test writer - drives bram_write_only_if with sequential writes
@@ -524,7 +526,7 @@ vivado_create_ip(
     module_top = "test_writer",
     part_number = "xczu28dr-ffvg1517-2-e",
     tags = ["manual"],
-    xilinx_env = ":xilinx_env_2025_1.sh",
+    target_compatible_with = _REQUIRES_VIVADO_2025_1,
 )
 
 # Interface example project top level
@@ -547,5 +549,27 @@ vivado_create_project(
     module_top = "interface_example_top",
     part_number = "xczu28dr-ffvg1517-2-e",
     tags = ["manual"],
-    xilinx_env = ":xilinx_env_2025_1.sh",
+    target_compatible_with = _REQUIRES_VIVADO_2025_1,
+)
+
+# ============================================================================
+# Top-level aggregator that transitions all 2025.1-only targets in one go.
+# Tagged `manual` so `bazel build //...` (e.g. on CI without a Vivado install)
+# skips it — its underlying targets are vivado-action heavy and would fail in
+# an env without vivado 2025.1. Build explicitly when you do have it:
+#   bazel build //tests:all_bram_2025_1
+# ============================================================================
+
+with_vivado_version(
+    name = "all_bram_2025_1",
+    tags = ["manual"],
+    targets = [
+        ":bram_read_only_interface_ip",
+        ":bram_write_only_interface_ip",
+        ":bram_read_write_splitter_ip",
+        ":test_reader_ip",
+        ":test_writer_ip",
+        ":interface_example_project",
+    ],
+    vivado_version = "2025.1",
 )

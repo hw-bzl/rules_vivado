@@ -7,25 +7,111 @@ Bazel rules for Xilinx Vivado FPGA synthesis, placement, routing, and bitstream 
 
 ## Overview
 
-`rules_vivado` provides Bazel rules to build FPGA designs using Xilinx Vivado. It integrates with `rules_verilator` to share the `VerilogInfo` provider, allowing the same Verilog/SystemVerilog libraries to be used for both simulation and synthesis.
+`rules_vivado` provides Bazel rules to build FPGA designs using Xilinx Vivado. HDL sources flow in through [`rules_verilog`](https://registry.bazel.build/modules/rules_verilog) (`VerilogInfo`) and [`rules_vhdl`](https://registry.bazel.build/modules/rules_vhdl) (`VhdlInfo`); the same libraries can be reused for simulation and synthesis.
 
 ## Setup
 
 Add the following to your `MODULE.bazel`:
 
 ```starlark
-bazel_dep(name = "rules_verilator", version = "0.1.0")
+bazel_dep(name = "rules_verilog", version = "1.1.1")
+bazel_dep(name = "rules_vhdl", version = "0.1.1")
 bazel_dep(name = "rules_vivado", version = "0.1.0")
 ```
+
+Then register at least one `vivado_toolchain` so every `vivado_*` rule can resolve the Xilinx environment script automatically — see [Toolchains](#toolchains) below.
+
+## Toolchains
+
+`rules_vivado` resolves the Xilinx environment via Bazel toolchain resolution. You declare a `vivado_toolchain` that wraps a shell script sourcing your Vivado install, wrap it in `toolchain(...)`, and register it from `MODULE.bazel`.
+
+### Implementing a toolchain
+
+1. Write a shell script that sources your Vivado install (and the license server, if applicable). The path convention is `tools/vivado/xilinx_env.sh` but anywhere works:
+
+   ```bash
+   #!/usr/bin/env bash
+   set -e
+   export HOME=/tmp
+   source /opt/Xilinx/Vivado/2024.2/settings64.sh
+   export XILINXD_LICENSE_FILE=2100@license.example.com
+   ```
+
+2. Declare a `vivado_toolchain` and a `toolchain()` wrapper in BUILD:
+
+   ```starlark
+   load("@rules_vivado//vivado:toolchain.bzl", "vivado_toolchain")
+
+   vivado_toolchain(
+       name = "vivado_local",
+       xilinx_env = "xilinx_env.sh",
+   )
+
+   toolchain(
+       name = "vivado_toolchain",
+       toolchain = ":vivado_local",
+       toolchain_type = "@rules_vivado//vivado:toolchain_type",
+   )
+   ```
+
+3. Register it from `MODULE.bazel`:
+
+   ```starlark
+   register_toolchains("//tools/vivado:vivado_toolchain")
+   ```
+
+That's it — every `vivado_*` rule now resolves this toolchain automatically; the per-rule `xilinx_env` attribute (deprecated) is no longer needed.
+
+### Constraining toolchains
+
+When you register multiple `vivado_toolchain` instances (one per Vivado version, one per docker image, …), gate each `toolchain()` on a `constraint_value` so Bazel picks the right one. `rules_vivado` exposes one `constraint_value` per known release in [`//vivado/constraints/BUILD.bazel`](vivado/constraints/BUILD.bazel) (auto-generated from [`//vivado/private:versions.bzl`](vivado/private/versions.bzl) `VIVADO_VERSIONS`).
+
+```starlark
+load("@rules_vivado//vivado:toolchain.bzl", "vivado_toolchain")
+
+vivado_toolchain(
+    name = "vivado_2024_2",
+    xilinx_env = "xilinx_env_2024_2.sh",
+)
+
+toolchain(
+    name = "vivado_toolchain_2024_2",
+    exec_compatible_with = ["@rules_vivado//vivado/constraints/version:2024.2"],
+    toolchain = ":vivado_2024_2",
+    toolchain_type = "@rules_vivado//vivado:toolchain_type",
+)
+
+platform(
+    name = "vivado_2024_2_platform",
+    constraint_values = ["@rules_vivado//vivado/constraints/version:2024.2"],
+    exec_properties = {
+        "container-image": "docker://your.registry/vivado:2024.2",
+    },
+    parents = ["@platforms//host"],
+)
+```
+
+Register both from `MODULE.bazel`:
+
+```starlark
+register_toolchains("//tools/vivado:vivado_toolchain_2024_2")
+register_execution_platforms("//tools/vivado:vivado_2024_2_platform")
+```
+
+The first registered exec platform is the default. Switch versions per build with `--platforms=//tools/vivado:vivado_2024_2_platform` — that also lets `target_compatible_with = ["@rules_vivado//vivado/constraints/version:2024.2"]` on a target evaluate against the right constraint (incompatible-at-default, compatible-when-platform-pinned). For per-target switching without a global flag, use a wrapper rule with `cfg = transition(...)` — see [`tests/transition.bzl`](tests/transition.bzl) for a `with_vivado_version` example that takes a list of targets and pins the version for the whole group.
+
+Constraints are the only mechanism — there is no parallel build-setting / flag-driven path. This avoids the two-sources-of-truth problem and keeps the per-version metadata (constraints, `exec_properties` like `container-image`) all on the platform object where it belongs.
+
+The same guidance lives in the [`//vivado:toolchain.bzl`](vivado/toolchain.bzl) module docstring for reference next to the rule itself.
 
 ## Available Rules
 
 ### `verilog_library`
 
-Define Verilog/SystemVerilog modules using `rules_verilator`:
+Define Verilog/SystemVerilog modules using `rules_verilog`:
 
 ```starlark
-load("@rules_verilator//verilog:defs.bzl", "verilog_library")
+load("@rules_verilog//verilog:defs.bzl", "verilog_library")
 
 verilog_library(
     name = "my_design",
@@ -34,9 +120,24 @@ verilog_library(
 )
 ```
 
+### `vhdl_library`
+
+Define VHDL modules using `rules_vhdl`:
+
+```starlark
+load("@rules_vhdl//vhdl:defs.bzl", "vhdl_library")
+
+vhdl_library(
+    name = "my_design",
+    srcs = ["my_design.vhd"],
+    library = "work",
+    standard = "2008",
+)
+```
+
 ### `vivado_synthesize`
 
-Synthesize a Verilog design:
+Synthesize a design (Verilog or VHDL):
 
 ```starlark
 load("@rules_vivado//vivado:defs.bzl", "vivado_synthesize")
@@ -46,7 +147,6 @@ vivado_synthesize(
     module = ":my_design",
     module_top = "my_design",
     part_number = "xczu28dr-ffvg1517-2-e",
-    xilinx_env = ":xilinx_env.sh",
 )
 ```
 
@@ -62,7 +162,6 @@ vivado_flow(
     module = ":my_design",
     module_top = "my_design",
     part_number = "xczu28dr-ffvg1517-2-e",
-    xilinx_env = ":xilinx_env.sh",
 )
 ```
 
@@ -86,7 +185,6 @@ vivado_create_project(
     module = ":my_design",
     module_top = "my_design",
     part_number = "xczu28dr-ffvg1517-2-e",
-    xilinx_env = ":xilinx_env.sh",
 )
 ```
 
@@ -105,7 +203,6 @@ vivado_create_ip(
     ip_vendor = "my_company",
     ip_library = "my_lib",
     ip_version = "1.0",
-    xilinx_env = ":xilinx_env.sh",
 )
 ```
 
@@ -121,7 +218,6 @@ xsim_test(
     module = ":my_testbench",
     module_top = "my_testbench",
     part_number = "xczu28dr-ffvg1517-2-e",
-    xilinx_env = ":xilinx_env.sh",
 )
 ```
 
@@ -190,31 +286,6 @@ verilog_library(
 )
 ```
 
-The `signals` attribute can be used as an alternative to the `src` approach, specifying signals inline:
-
-```starlark
-vivado_interface_definition(
-    name = "my_interface_def",
-    interface_name = "my_interface",
-    vendor = "mycompany.com",
-    library = "interface",
-    version = "1.0",
-    signals = {
-        "valid": ["direction_master=out", "direction_slave=in", "qualifier="],
-        "ready": ["direction_master=in", "direction_slave=out", "qualifier="],
-        "data": ["direction_master=out", "direction_slave=in", "qualifier=data", "width=32"],
-        "addr": ["direction_master=out", "direction_slave=in", "qualifier=address", "width=16"],
-    },
-)
-```
-
-Signal attributes (for inline `signals`):
-- `direction_master`: Signal direction for master modport (`in` or `out`)
-- `direction_slave`: Signal direction for slave modport (`in` or `out`)
-- `qualifier`: Signal qualifier (`address`, `data`, `clock`, `reset`, or empty)
-- `width`: Signal width (defaults to 1)
-- `optional`: Whether the signal is optional (`true` or `false`, defaults to `false`)
-
 ### `vivado_create_interface_ip`
 
 Package a `vivado_interface_definition` as an IP catalog entry so Vivado can use the custom interface in block designs:
@@ -227,7 +298,6 @@ vivado_create_interface_ip(
     interface = ":my_interface_def",
     module = ":my_interface",
     part_number = "xczu28dr-ffvg1517-2-e",
-    xilinx_env = ":xilinx_env.sh",
 )
 ```
 
@@ -243,27 +313,25 @@ vivado_create_ip(
 )
 ```
 
-See `vivado/tests/` for a complete example using custom BRAM read/write interfaces with a splitter module and block design project.
+See [`tests/`](tests/) for a complete example using custom BRAM read/write interfaces with a splitter module and block design project.
 
-## Xilinx Environment
+## Deprecated `xilinx_env` attribute
 
-All rules require a `xilinx_env.sh` script that sets up the Vivado environment:
-
-```bash
-#!/usr/bin/env bash
-export HOME=/tmp
-source /opt/xilinx/Vivado/2021.2/settings64.sh
-export XILINXD_LICENSE_FILE=2100@localhost
-```
+Each vivado-running rule still accepts a per-target `xilinx_env` attribute pointing at a shell script. **This attribute is deprecated** — if it is set, the rule prints a warning at analysis time directing you to register a `vivado_toolchain` instead. Migrate by dropping the attribute and registering a toolchain as described in [Toolchains](#toolchains).
 
 ## Providers
 
-### From `rules_verilator`
+### From `rules_verilog`
 
-- `VerilogInfo` - Verilog module information (sources, dependencies)
+- `VerilogInfo` - Verilog/SystemVerilog library information (sources, headers, data, transitive deps).
+
+### From `rules_vhdl`
+
+- `VhdlInfo` - VHDL library information (sources, library name, standard, transitive deps).
 
 ### From `rules_vivado`
 
+- `VivadoToolchainInfo` - Resolved Xilinx environment.
 - `VivadoSynthCheckpointInfo` - Synthesis checkpoint (.dcp)
 - `VivadoPlacementCheckpointInfo` - Placement checkpoint
 - `VivadoRoutingCheckpointInfo` - Routing checkpoint
