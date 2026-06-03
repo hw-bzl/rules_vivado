@@ -1,0 +1,21 @@
+load("@rules_verilog//verilog:defs.bzl", "verilog_library")
+load("@rules_vivado//vivado:defs.bzl", "vivado_packaged_ip")
+
+# vivado_packaged_ip — stage a Vivado IP repo directory (no Vivado
+# action; pure `mkdir + cp -L`). Feed the resulting TreeArtifact into
+# a downstream project's `ip_blocks` attr as a vendored IP repo.
+#
+# `hdl_libraries` accepts `verilog_library` / `vhdl_library` targets;
+# their transitive sources are staged alongside anything in `srcs`.
+# The `component.xml` in `srcs` is what Vivado uses to recognize the
+# tree as an IP.
+verilog_library(
+    name = "loopback_hdl",
+    srcs = ["loopback.sv"],
+)
+
+vivado_packaged_ip(
+    name = "loopback_repo",
+    srcs = ["component.xml"],
+    hdl_libraries = [":loopback_hdl"],
+)

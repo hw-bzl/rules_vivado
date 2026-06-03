@@ -1,10 +1,12 @@
-# Create the interface IP directory structure
-file mkdir {{IP_OUTPUT_DIR}}
+set IP_OUTPUT_DIR              {{IP_OUTPUT_DIR}}
+set BUS_DEFINITION_FILE        {{BUS_DEFINITION_FILE}}
+set ABSTRACTION_DEFINITION_FILE {{ABSTRACTION_DEFINITION_FILE}}
 
-# Copy interface definition files to IP directory
-# Vivado auto-discovers bus definitions and abstraction definitions
-# from IP repository paths - no component.xml wrapper is needed.
-file copy -force {{BUS_DEFINITION_FILE}} {{IP_OUTPUT_DIR}}/
-file copy -force {{ABSTRACTION_DEFINITION_FILE}} {{IP_OUTPUT_DIR}}/
+file mkdir $IP_OUTPUT_DIR
 
-puts "Interface IP created at {{IP_OUTPUT_DIR}}"
+# Vivado auto-discovers bus / abstraction definitions from IP repository
+# paths — no component.xml wrapper needed.
+file copy -force $BUS_DEFINITION_FILE $IP_OUTPUT_DIR/
+file copy -force $ABSTRACTION_DEFINITION_FILE $IP_OUTPUT_DIR/
+
+puts "Interface IP created at $IP_OUTPUT_DIR"

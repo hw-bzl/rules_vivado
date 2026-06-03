@@ -1,0 +1,101 @@
+load("@rules_rust//rust:defs.bzl", "rust_binary")
+load("@rules_shell//shell:sh_test.bzl", "sh_test")
+load("@rules_tcl//tcl:defs.bzl", "tcl_binary")
+load("@rules_verilog//verilog:defs.bzl", "verilog_library")
+load("//tests/hooks:wrap_under_hook_transition.bzl", "wrap_under_hook_transition")
+load("//vivado:defs.bzl", "vivado_export_simulation", "vivado_project")
+
+# Executable-hook demo. Wires all four hook slots on a single
+# `vivado_export_simulation` target:
+#   pre_hooks       — .tcl sourced INSIDE Vivado, before the export
+#   pre_hook_tools  — executable subprocess BEFORE Vivado starts
+#   post_hooks      — .tcl sourced INSIDE Vivado, after the export
+#   post_hook_tools — executable subprocess AFTER Vivado exits
+#
+# `rust_binary` was picked over `sh_binary` / `cc_binary` because
+# rules_rust ships a hermetic rustc that binds without a cc_toolchain
+# — the hook demo builds cleanly on RBE without dragging in the
+# default cpp-toolchain autodetection quirks.
+
+rust_binary(
+    name = "pre_hook_tool",
+    srcs = ["src/pre_hook.rs"],
+    edition = "2021",
+)
+
+rust_binary(
+    name = "post_hook_tool",
+    srcs = ["src/post_hook.rs"],
+    edition = "2021",
+)
+
+verilog_library(
+    name = "tb",
+    srcs = ["tb.sv"],
+)
+
+# tcl_binary hook: proves that a hook attr can accept a `tcl_binary`
+# target, its wrapper gets sourced inside Vivado, and its `tcl_library`
+# deps resolve via `package require` (auto_path wired by the hook
+# wrapper). Tagged `manual` because it's only meant to build under the
+# Vivado hook transition (no default tcl toolchain is registered in
+# rules_vivado — only the Vivado-flavored one).
+tcl_binary(
+    name = "entry_hook",
+    srcs = ["entry_hook.tcl"],
+    tags = ["manual"],
+    deps = ["//tests/hooks/helpers:vivado_hook_helpers"],
+)
+
+# Second tcl_binary hook, deliberately WITHOUT a `tcl_library` dep.
+# Runs after `entry_hook` in the same PRE_HOOKS list and asserts that
+# `entry_hook`'s helpers dir did NOT stay on `auto_path` — the wrapper's
+# save/restore contract. If the save/restore ever regresses, this hook
+# `error`s inside Vivado and `hooks_export` fails.
+tcl_binary(
+    name = "entry_hook_second",
+    srcs = ["entry_hook_second.tcl"],
+    tags = ["manual"],
+)
+
+vivado_project(
+    name = "hooks_project",
+    module = ":tb",
+    module_top = "tb",
+    part_number = "xc7a35ticsg324-1L",
+    tags = ["requires-vivado"],
+)
+
+vivado_export_simulation(
+    name = "hooks_export",
+    module_top = "tb",
+    post_hook_tools = [":post_hook_tool"],
+    post_hooks = ["post_hook.tcl"],
+    pre_hook_tools = [":pre_hook_tool"],
+    pre_hooks = [
+        "pre_hook.tcl",
+        ":entry_hook",
+        ":entry_hook_second",
+    ],
+    project = ":hooks_project",
+    simulator = "xsim",
+    tags = ["requires-vivado"],
+)
+
+# Regression: expose the transitioned Vivado hook wrapper as a plain
+# target so `hook_wrapper_content_test` can consume the generated `.tcl`
+# without needing Vivado. `wrap_under_hook_transition` applies
+# `hook_transition` (which prepends `//vivado:vivado_tcl_toolchain` to
+# `--extra_toolchains`), mirroring what happens when `entry_hook` is
+# reached through a real hook attr.
+wrap_under_hook_transition(
+    name = "entry_hook_transitioned",
+    binary = ":entry_hook",
+)
+
+sh_test(
+    name = "hook_wrapper_content_test",
+    srcs = ["hook_wrapper_content_test.sh"],
+    data = [":entry_hook_transitioned"],
+    env = {"WRAPPER_PATH": "$(rootpath :entry_hook_transitioned)"},
+)

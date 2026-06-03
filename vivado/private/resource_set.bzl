@@ -145,7 +145,12 @@ def get_resource_set(jobs):
     Args:
         jobs (int): The number of jobs the action is expected to consume.
             Values above MAX_VIVADO_THREADS are clamped (Vivado will not use
-            more threads than that even if asked).
+            more threads than that even if asked). Values below 1 are
+            clamped to 1 — a Vivado process always occupies at least one
+            CPU, and the raw dict lookup would otherwise fail with an
+            unactionable `key 0 not found in dictionary`. Rules validate
+            the user-facing attr up front (see `run_tcl_template`), so this
+            clamp is only a backstop.
 
     Returns:
         Optional[Callable]: A resource set appropriate for the current configuration.
@@ -153,5 +158,8 @@ def get_resource_set(jobs):
 
     if jobs > MAX_VIVADO_THREADS:
         return _RESOURCE_SETS[MAX_VIVADO_THREADS]
+
+    if jobs < 1:
+        return _RESOURCE_SETS[1]
 
     return _RESOURCE_SETS[jobs]

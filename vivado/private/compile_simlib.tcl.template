@@ -1,0 +1,40 @@
+set INSTALL_ENV_VAR    {{INSTALL_ENV_VAR}}
+# Quoted so modelsim's empty subdir (MODEL_TECH is already the bin dir)
+# parses as `set INSTALL_BIN_SUBDIR ""` rather than a variable read.
+set INSTALL_BIN_SUBDIR "{{INSTALL_BIN_SUBDIR}}"
+set SIMULATOR          {{SIMULATOR}}
+set FAMILY             {{FAMILY}}
+set LANGUAGE           {{LANGUAGE}}
+set LIBRARY            {{LIBRARY}}
+set SIMLIB_DIR         {{SIMLIB_DIR}}
+set NO_IP_COMPILE      {{NO_IP_COMPILE}}
+set NO_SYSTEMC_COMPILE {{NO_SYSTEMC_COMPILE}}
+
+if {![info exists ::env($INSTALL_ENV_VAR)]} {
+    error "$INSTALL_ENV_VAR not set."
+}
+set simulator_exec_path "$::env($INSTALL_ENV_VAR)$INSTALL_BIN_SUBDIR"
+
+if {[lsearch -exact {riviera activehdl} $SIMULATOR] >= 0} {
+    set f [open "library.cfg" w]
+    puts $f "\$INCLUDE = \"\$VSIMSALIBRARYCFG\""
+    close $f
+}
+
+set extra_flags [list]
+if {$NO_IP_COMPILE} {
+    lappend extra_flags -no_ip_compile
+}
+if {$NO_SYSTEMC_COMPILE} {
+    lappend extra_flags -no_systemc_compile
+}
+
+compile_simlib \
+    -simulator $SIMULATOR \
+    -simulator_exec_path $simulator_exec_path \
+    -family $FAMILY \
+    -language $LANGUAGE \
+    -library $LIBRARY \
+    {*}$extra_flags \
+    -directory $SIMLIB_DIR \
+    -force

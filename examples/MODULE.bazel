@@ -15,7 +15,9 @@ module(
 )
 
 bazel_dep(name = "rules_vivado", version = "0.0.0")
-bazel_dep(name = "rules_verilog", version = "1.4.2")
+bazel_dep(name = "rules_verilog", version = "1.4.3")
+bazel_dep(name = "rules_tcl", version = "0.12.1")
+bazel_dep(name = "platforms", version = "1.0.0")
 
 # For local builds, resolve `rules_vivado` to the in-tree checkout. BCR's
 # presubmit runner strips this and substitutes the version under test, so

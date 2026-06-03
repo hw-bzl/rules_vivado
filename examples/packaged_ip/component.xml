@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Minimal IP-XACT component descriptor. A real IP's component.xml
+     would enumerate ports, memory maps, bus interfaces, and file sets;
+     Vivado accepts the stub for `add_files -norecurse` staging. -->
+<spirit:component xmlns:spirit="http://www.spiritconsortium.org/XMLSchema/SPIRIT/1685-2009"/>

@@ -1,11 +1,42 @@
-set_param general.maxThreads {{THREADS}}
-open_checkpoint {{CHECKPOINT_IN}}
+set THREADS        {{THREADS}}
+set CHECKPOINT_IN  {{CHECKPOINT_IN}}
+set CHECKPOINT_OUT {{CHECKPOINT_OUT}}
+set OPT_ARGS       {{OPT_ARGS}}
+set IMPL_XDC_BUNDLE "{{IMPL_XDC_BUNDLE}}"
+set MODULE_TOP     "{{MODULE_TOP}}"
 
-opt_design -directive {{OPT_DIRECTIVE}}
-report_timing_summary -file {{TIMING_REPORT}}
-report_utilization -file {{UTIL_REPORT}}
-report_drc -file {{DRC_REPORT}}
-if {"{{PROBES_FILE}}" != ""} {
-    write_debug_probes {{PROBES_FILE}}
+set PRE_HOOKS  {{PRE_HOOKS}}
+set POST_HOOKS {{POST_HOOKS}}
+
+set REPORT_COMMANDS    {{REPORT_COMMANDS}}
+set REQUESTED_REPORTS  {{REQUESTED_REPORTS}}
+
+# Shared procs (`::rules_vivado::*`), staged by `run_tcl_template`.
+source {{RULES_VIVADO_TCL}}
+
+set_param general.maxThreads $THREADS
+open_checkpoint $CHECKPOINT_IN
+
+# Re-apply implementation-only XDCs captured during upstream synth.
+# `synth_design` doesn't apply XDCs marked USED_IN_IMPLEMENTATION == True
+# (LOC, CLOCK_REGION, BUFG_GT placement, GT_QUAD_BASE pins) and
+# `write_checkpoint` only persists already-applied constraints — so without
+# this, `opt_design` and `place_design` run under-constrained and the
+# clock-region placer can fail for designs with multiple BUFG_GT /
+# transceiver QUAD instances. `read_xdc` is a no-op on already-applied
+# constraints.
+if {$IMPL_XDC_BUNDLE ne "" && [file exists $IMPL_XDC_BUNDLE] && [file size $IMPL_XDC_BUNDLE] > 0} {
+    read_xdc $IMPL_XDC_BUNDLE
 }
-write_checkpoint -force {{CHECKPOINT_OUT}}
+
+foreach hook $PRE_HOOKS { source $hook }
+
+opt_design {*}$OPT_ARGS
+
+foreach hook $POST_HOOKS { source $hook }
+
+# Reports run via the shared helper (see `rules_vivado.tcl`): each is
+# wrapped in `catch` so one failure doesn't abort the action.
+::rules_vivado::run_reports $REPORT_COMMANDS $REQUESTED_REPORTS
+
+write_checkpoint -force $CHECKPOINT_OUT

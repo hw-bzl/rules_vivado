@@ -1,0 +1,17 @@
+# write_debug_probes: emit a `.ltx` from an open checkpoint.
+
+set THREADS       {{THREADS}}
+set CHECKPOINT_IN {{CHECKPOINT_IN}}
+set PROBES_FILE   {{PROBES_FILE}}
+
+set PRE_HOOKS  {{PRE_HOOKS}}
+set POST_HOOKS {{POST_HOOKS}}
+
+set_param general.maxThreads $THREADS
+open_checkpoint $CHECKPOINT_IN
+
+foreach hook $PRE_HOOKS { source $hook }
+
+write_debug_probes -force $PROBES_FILE
+
+foreach hook $POST_HOOKS { source $hook }

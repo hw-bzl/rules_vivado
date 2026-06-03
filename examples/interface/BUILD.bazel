@@ -1,0 +1,48 @@
+load("@rules_verilog//verilog:defs.bzl", "verilog_library")
+load(
+    "@rules_vivado//vivado:defs.bzl",
+    "vivado_interface_definition",
+    "vivado_interface_ip",
+)
+
+# ---------------------------------------------------------------------------
+# vivado_interface_definition — parse a SystemVerilog `interface` and
+# emit its IP-XACT bus/abstraction descriptors. The output is a
+# TreeArtifact that Vivado picks up when the interface is later
+# referenced from an X_INTERFACE-tagged port.
+# ---------------------------------------------------------------------------
+
+vivado_interface_definition(
+    name = "stream_interface",
+    src = "stream_if.sv",
+    description = "Trivial ready/valid stream interface for the example demo.",
+    interface_name = "stream_if",
+    library = "interfaces",
+    vendor = "example_vendor",
+    version = "1.0",
+)
+
+# Bring the interface's IP-XACT files along with the interface's
+# SystemVerilog so downstream consumers get both when they depend on
+# this library. The `data = [":stream_interface"]` propagates the
+# generated XML tree; the `srcs` gives Vivado the SV source itself.
+verilog_library(
+    name = "stream_if",
+    srcs = ["stream_if.sv"],
+    data = [":stream_interface"],
+    visibility = ["//interface:__subpackages__"],
+)
+
+# ---------------------------------------------------------------------------
+# vivado_interface_ip — publish the interface into the current
+# project's IP catalog so any downstream `vivado_ip_core` /
+# `vivado_project` / `vivado_synthesis` action can resolve it. Without this, Vivado
+# knows the interface's XML file exists but can't bind X_INTERFACE-
+# tagged ports on packaged IPs to it.
+# ---------------------------------------------------------------------------
+
+vivado_interface_ip(
+    name = "stream_interface_ip",
+    interface = ":stream_interface",
+    module = ":stream_if",
+)

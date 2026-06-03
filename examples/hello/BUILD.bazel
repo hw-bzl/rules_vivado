@@ -1,26 +1,84 @@
 load("@rules_verilog//verilog:defs.bzl", "verilog_library")
-load("@rules_vivado//vivado:defs.bzl", "vivado_flow", "vivado_synthesize")
+load(
+    "@rules_vivado//vivado:defs.bzl",
+    "vivado_bitstream",
+    "vivado_device_image",
+    "vivado_place_optimize",
+    "vivado_placement",
+    "vivado_project",
+    "vivado_routing",
+    "vivado_synthesis",
+    "vivado_synthesis_optimize",
+)
+
+# End-to-end demo: RTL -> synth -> impl chain -> bitstream (or Versal
+# device image). Each rule wraps a `.dcp` checkpoint so you can build
+# any intermediate target to inspect that phase's output.
 
 verilog_library(
     name = "hello",
     srcs = ["hello.sv"],
+    data = ["hello.xdc"],
 )
 
-# Single-phase synthesis target — produces a synth .dcp.
-vivado_synthesize(
+# vivado_project — packages a verilog_library + part into a project
+# TCL script (no Vivado invocation at build time).
+vivado_project(
+    name = "hello_project",
+    module = ":hello",
+    module_top = "hello",
+    part_number = "xc7a35ticsg324-1L",
+)
+
+# vivado_synthesis — sources the project script inside Vivado and
+# produces a post-synth checkpoint.
+vivado_synthesis(
     name = "hello_synth",
-    module = ":hello",
-    module_top = "hello",
-    part_number = "xczu28dr-ffvg1517-2-e",
+    project = ":hello_project",
 )
 
-# End-to-end flow — chains synth → opt → place → place_opt → route →
-# bitstream. Build `:hello_flow` for the final `.bit`; build the per-phase
-# sub-targets (`:hello_flow_synth`, `:hello_flow_route`, …) to inspect
-# intermediate checkpoints.
-vivado_flow(
-    name = "hello_flow",
-    module = ":hello",
-    module_top = "hello",
-    part_number = "xczu28dr-ffvg1517-2-e",
+# Implementation pipeline as four discrete rules:
+#   synth_opt -> placement -> place_opt -> routing
+# Insert `pre_hooks` / `post_hooks` between phases to hand-tune the
+# flow (drop constraints, run `phys_opt_design` with a specific
+# directive, etc.).
+vivado_synthesis_optimize(
+    name = "hello_synth_opt",
+    checkpoint = ":hello_synth",
+)
+
+vivado_placement(
+    name = "hello_placement",
+    checkpoint = ":hello_synth_opt",
+)
+
+vivado_place_optimize(
+    name = "hello_place_opt",
+    checkpoint = ":hello_placement",
+)
+
+vivado_routing(
+    name = "hello_route",
+    checkpoint = ":hello_place_opt",
+)
+
+# Final-stage rules — both open the post-route checkpoint and emit
+# the device programming file.
+
+# 7-series / UltraScale / UltraScale+ -> `.bit`.
+vivado_bitstream(
+    name = "hello_bit",
+    checkpoint = ":hello_route",
+)
+
+# Versal -> `.pdi` (Programmable Device Image). Tagged manual because
+# the route checkpoint above targets an artix7 part, and Vivado
+# rejects `write_device_image` on 7-series with `[Common 17-69]
+# write_device_image is not supported for artix7 parts`. On a real
+# Versal design you'd route against a Versal part first — see
+# `//tests/versal` for the end-to-end shape.
+vivado_device_image(
+    name = "hello_pdi",
+    checkpoint = ":hello_route",
+    tags = ["manual"],
 )

@@ -1,0 +1,27 @@
+load("@rules_vivado//vivado:defs.bzl", "vivado_export_simulation", "vivado_project")
+
+# vivado_export_simulation — hand off to a third-party simulator
+# instead of xsim. The rule stages a `simulate.sh` + supporting
+# `compile.do` / `wave.do` under the exported tree so the target
+# simulator can pick up from there. `simulator` picks the flavor;
+# `module_top` is the simulation-fileset top.
+#
+# This example uses `xsim` because that's the simulator our CI can
+# reach (bundled with Vivado). The rule also supports `questa`,
+# `riviera`, `xcelium`, and `vcs*` — community contributors are the
+# canonical validator for those; see //hooks and tests/integration
+# for the multi-simulator matrix.
+
+vivado_project(
+    name = "hello_export_project",
+    module = "//simulation:tb",
+    module_top = "tb",
+    part_number = "xc7a35ticsg324-1L",
+)
+
+vivado_export_simulation(
+    name = "hello_export_xsim",
+    module_top = "tb",
+    project = ":hello_export_project",
+    simulator = "xsim",
+)

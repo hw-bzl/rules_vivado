@@ -1,0 +1,45 @@
+load("@rules_shell//shell:sh_test.bzl", "sh_test")
+load("@rules_verilog//verilog:defs.bzl", "verilog_library")
+load("//vivado:defs.bzl", "vivado_project", "vivado_xsim_test")
+
+# Negative test: an SV assertion failure must translate to a failing
+# `vivado_xsim_test`. Same shape as //tests/error_detection but for
+# assertion failures rather than `$error` calls.
+
+verilog_library(
+    name = "tb",
+    srcs = ["tb.sv"],
+)
+
+vivado_project(
+    name = "assert_detection_project",
+    module = ":tb",
+    module_top = "assert_detection_tb",
+    part_number = "xc7a35ticsg324-1L",
+    tags = ["requires-vivado"],
+)
+
+vivado_xsim_test(
+    # `manual` because this test is DESIGNED to fail — its whole
+    # purpose is to be wrapped by
+    # `assert_detection_expect_failure_test`, which inverts the exit
+    # code. Under a `//...` wildcard it would show as a FAILED test
+    # even though the failure is expected; `manual` keeps it out of
+    # wildcard discovery while still letting the wrapper consume it
+    # as data.
+    name = "assert_detection_xsim",
+    module_top = "assert_detection_tb",
+    project = ":assert_detection_project",
+    tags = [
+        "manual",
+        "requires-vivado",
+    ],
+)
+
+sh_test(
+    name = "assert_detection_expect_failure_test",
+    srcs = ["//tests:expect_xsim_failure.sh"],
+    args = ["$(location :assert_detection_xsim)"],
+    data = [":assert_detection_xsim"],
+    tags = ["requires-vivado"],
+)

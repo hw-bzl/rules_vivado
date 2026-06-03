@@ -2,47 +2,109 @@
 
 load(
     "//vivado:providers.bzl",
+    "VivadoLogInfo",
     "VivadoPlacementCheckpointInfo",
+    "VivadoReportsInfo",
     "VivadoRoutingCheckpointInfo",
     "VivadoSynthCheckpointInfo",
 )
 load(
     "//vivado/private:common.bzl",
     "TOOLCHAIN_TYPE",
+    "get_vivado_toolchain",
+    "hook_attrs",
+    "hook_invocation",
+    "reports_data",
     "run_tcl_template",
+    "tcl_args",
+    "validate_args",
 )
 
-def _vivado_placement_impl(ctx):
-    placement_checkpoint = ctx.actions.declare_file("{}.dcp".format(ctx.label.name))
-    timing_summary_report = ctx.actions.declare_file("{}_timing.rpt".format(ctx.label.name))
-    util_report = ctx.actions.declare_file("{}_util.rpt".format(ctx.label.name))
+_REPORTS_ATTR_DOC = (
+    "Report types to run after the phase's main transformation. See " +
+    "`vivado_synthesis.reports` for the full API."
+)
 
-    checkpoint_in = ctx.attr.checkpoint[VivadoSynthCheckpointInfo].checkpoint
+_PLACEMENT_DEFAULT_REPORTS = ["timing_summary", "utilization"]
+_ROUTING_DEFAULT_REPORTS = ["io", "power", "route_status", "timing_summary", "utilization"]
+
+def _vivado_placement_impl(ctx):
+    toolchain = get_vivado_toolchain(ctx)
+
+    placement_checkpoint = ctx.actions.declare_file("{}.dcp".format(ctx.label.name))
+
+    upstream_synth = ctx.attr.checkpoint[VivadoSynthCheckpointInfo]
+    checkpoint_in = upstream_synth.checkpoint
+    impl_xdc_in = getattr(upstream_synth, "impl_xdc", None)
+    module_top = getattr(upstream_synth, "module_top", "") or ""
+    part_number = getattr(upstream_synth, "part_number", "") or ""
+    project_info = getattr(upstream_synth, "project_info", None)
+    upstream_input_files = getattr(upstream_synth, "input_files", None)
+
+    pre = hook_invocation(ctx, ctx.attr.pre_hooks)
+    post = hook_invocation(ctx, ctx.attr.post_hooks)
+    reports = reports_data(ctx, ctx.attr.reports)
+
+    validate_args(ctx.label, "place_args", ctx.attr.place_args, [])
 
     substitutions = {
         "{{CHECKPOINT_IN}}": checkpoint_in.path,
         "{{CHECKPOINT_OUT}}": placement_checkpoint.path,
-        "{{PLACEMENT_DIRECTIVE}}": ctx.attr.placement_directive,
+        "{{IMPL_XDC_BUNDLE}}": impl_xdc_in.path if impl_xdc_in else "",
+        "{{PLACE_ARGS}}": tcl_args(ctx.attr.place_args),
+        "{{POST_HOOKS}}": post.files_literal,
+        "{{PRE_HOOKS}}": pre.files_literal,
+        "{{REPORT_COMMANDS}}": reports.commands_dict,
+        "{{REQUESTED_REPORTS}}": reports.requested,
         "{{THREADS}}": "{}".format(ctx.attr.threads),
-        "{{TIMING_REPORT}}": timing_summary_report.path,
-        "{{UTIL_REPORT}}": util_report.path,
     }
 
-    outputs = [placement_checkpoint, timing_summary_report, util_report]
+    outputs = [placement_checkpoint] + reports.files
 
-    default_info = run_tcl_template(
+    input_files = [checkpoint_in]
+    if impl_xdc_in:
+        input_files.append(impl_xdc_in)
+
+    result = run_tcl_template(
         ctx = ctx,
+        toolchain = toolchain,
         template = ctx.file.placement_template,
         substitutions = substitutions,
-        input_files = [checkpoint_in],
+        input_files = input_files,
         output_files = outputs,
         mnemonic = "VivadoPlace",
         jobs = ctx.attr.threads,
+        tools = pre.tools + post.tools,
+    )
+
+    upstream = ctx.attr.checkpoint[VivadoLogInfo]
+    logs = dict(upstream.logs)
+    journals = dict(upstream.journals)
+    logs["place"] = result.log
+    journals["place"] = result.journal
+
+    transitive_inputs = [upstream_input_files] if upstream_input_files else []
+    checkpoint_input_files = depset(
+        direct = [placement_checkpoint],
+        transitive = transitive_inputs,
     )
 
     return [
-        default_info[0],
-        VivadoPlacementCheckpointInfo(checkpoint = placement_checkpoint),
+        DefaultInfo(files = depset(result.outputs)),
+        VivadoPlacementCheckpointInfo(
+            checkpoint = placement_checkpoint,
+            module_top = module_top,
+            part_number = part_number,
+            project_info = project_info,
+            input_files = checkpoint_input_files,
+            tcl = result.vivado_tcl,
+        ),
+        VivadoLogInfo(logs = logs, journals = journals),
+        VivadoReportsInfo(reports = reports.file_dict),
+        OutputGroupInfo(
+            log = depset(logs.values()),
+            reports = depset(reports.files),
+        ),
     ]
 
 vivado_placement = rule(
@@ -55,57 +117,108 @@ vivado_placement = rule(
             providers = [VivadoSynthCheckpointInfo],
             mandatory = True,
         ),
-        "placement_directive": attr.string(
-            doc = "The optimization directive.",
-            default = "Explore",
+        "place_args": attr.string_list(
+            doc = "Extra flags passed through to `place_design`.",
+            default = [],
         ),
         "placement_template": attr.label(
             doc = "The placement tcl template",
             default = Label("//vivado/private:placement.tcl.template"),
             allow_single_file = [".template"],
         ),
+        "reports": attr.string_list(
+            doc = _REPORTS_ATTR_DOC,
+            default = _PLACEMENT_DEFAULT_REPORTS,
+        ),
         "threads": attr.int(
             doc = "Threads to pass to vivado which defines the amount of parallelism.",
             default = 8,
         ),
-    },
+    } | hook_attrs(
+        post_doc = ("`.tcl`/`.xdc`/`.sdc` files OR `tcl_binary` targets " +
+                    "sourced after `place_design`, in list order."),
+        pre_doc = ("`.tcl`/`.xdc`/`.sdc` files OR `tcl_binary` targets " +
+                   "sourced on the opened checkpoint before `place_design`."),
+    ),
     provides = [
         DefaultInfo,
+        VivadoLogInfo,
         VivadoPlacementCheckpointInfo,
+        VivadoReportsInfo,
     ],
 )
 
 def _vivado_place_optimize_impl(ctx):
-    placement_checkpoint = ctx.actions.declare_file("{}.dcp".format(ctx.label.name))
-    timing_summary_report = ctx.actions.declare_file("{}_timing.rpt".format(ctx.label.name))
-    util_report = ctx.actions.declare_file("{}_util.rpt".format(ctx.label.name))
+    toolchain = get_vivado_toolchain(ctx)
 
-    checkpoint_in = ctx.attr.checkpoint[VivadoPlacementCheckpointInfo].checkpoint
+    placement_checkpoint = ctx.actions.declare_file("{}.dcp".format(ctx.label.name))
+
+    upstream_place = ctx.attr.checkpoint[VivadoPlacementCheckpointInfo]
+    checkpoint_in = upstream_place.checkpoint
+    module_top = getattr(upstream_place, "module_top", "") or ""
+    part_number = getattr(upstream_place, "part_number", "") or ""
+    project_info = getattr(upstream_place, "project_info", None)
+    upstream_input_files = getattr(upstream_place, "input_files", None)
+
+    pre = hook_invocation(ctx, ctx.attr.pre_hooks)
+    post = hook_invocation(ctx, ctx.attr.post_hooks)
+    reports = reports_data(ctx, ctx.attr.reports)
+
+    validate_args(ctx.label, "phys_opt_args", ctx.attr.phys_opt_args, [])
 
     substitutions = {
         "{{CHECKPOINT_IN}}": checkpoint_in.path,
         "{{CHECKPOINT_OUT}}": placement_checkpoint.path,
-        "{{PHYS_OPT_DIRECTIVE}}": ctx.attr.phys_opt_directive,
+        "{{PHYS_OPT_ARGS}}": tcl_args(ctx.attr.phys_opt_args),
+        "{{POST_HOOKS}}": post.files_literal,
+        "{{PRE_HOOKS}}": pre.files_literal,
+        "{{REPORT_COMMANDS}}": reports.commands_dict,
+        "{{REQUESTED_REPORTS}}": reports.requested,
         "{{THREADS}}": "{}".format(ctx.attr.threads),
-        "{{TIMING_REPORT}}": timing_summary_report.path,
-        "{{UTIL_REPORT}}": util_report.path,
     }
 
-    outputs = [placement_checkpoint, timing_summary_report, util_report]
+    outputs = [placement_checkpoint] + reports.files
 
-    default_info = run_tcl_template(
+    result = run_tcl_template(
         ctx = ctx,
+        toolchain = toolchain,
         template = ctx.file.place_optimize_template,
         substitutions = substitutions,
         input_files = [checkpoint_in],
         output_files = outputs,
         mnemonic = "VivadoPlaceOpt",
         jobs = ctx.attr.threads,
+        tools = pre.tools + post.tools,
+    )
+
+    upstream = ctx.attr.checkpoint[VivadoLogInfo]
+    logs = dict(upstream.logs)
+    journals = dict(upstream.journals)
+    logs["place_opt"] = result.log
+    journals["place_opt"] = result.journal
+
+    transitive_inputs = [upstream_input_files] if upstream_input_files else []
+    checkpoint_input_files = depset(
+        direct = [placement_checkpoint],
+        transitive = transitive_inputs,
     )
 
     return [
-        default_info[0],
-        VivadoPlacementCheckpointInfo(checkpoint = placement_checkpoint),
+        DefaultInfo(files = depset(result.outputs)),
+        VivadoPlacementCheckpointInfo(
+            checkpoint = placement_checkpoint,
+            module_top = module_top,
+            part_number = part_number,
+            project_info = project_info,
+            input_files = checkpoint_input_files,
+            tcl = result.vivado_tcl,
+        ),
+        VivadoLogInfo(logs = logs, journals = journals),
+        VivadoReportsInfo(reports = reports.file_dict),
+        OutputGroupInfo(
+            log = depset(logs.values()),
+            reports = depset(reports.files),
+        ),
     ]
 
 vivado_place_optimize = rule(
@@ -118,73 +231,108 @@ vivado_place_optimize = rule(
             providers = [VivadoPlacementCheckpointInfo],
             mandatory = True,
         ),
-        "phys_opt_directive": attr.string(
-            doc = "The optimization directive.",
-            default = "AggressiveExplore",
+        "phys_opt_args": attr.string_list(
+            doc = "Extra flags passed through to `phys_opt_design`.",
+            default = [],
         ),
         "place_optimize_template": attr.label(
             doc = "The placement tcl template",
             default = Label("//vivado/private:place_optimize.tcl.template"),
             allow_single_file = [".template"],
         ),
+        "reports": attr.string_list(
+            doc = _REPORTS_ATTR_DOC,
+            default = _PLACEMENT_DEFAULT_REPORTS,
+        ),
         "threads": attr.int(
             doc = "Threads to pass to vivado which defines the amount of parallelism.",
             default = 8,
         ),
-    },
+    } | hook_attrs(
+        post_doc = ("`.tcl`/`.xdc`/`.sdc` files OR `tcl_binary` targets " +
+                    "sourced after `phys_opt_design`, in list order."),
+        pre_doc = ("`.tcl`/`.xdc`/`.sdc` files OR `tcl_binary` targets " +
+                   "sourced on the opened checkpoint before `phys_opt_design`."),
+    ),
     provides = [
         DefaultInfo,
+        VivadoLogInfo,
         VivadoPlacementCheckpointInfo,
+        VivadoReportsInfo,
     ],
 )
 
 def _vivado_routing_impl(ctx):
-    route_checkpoint = ctx.actions.declare_file("{}.dcp".format(ctx.label.name))
-    timing_summary_report = ctx.actions.declare_file("{}_timing.rpt".format(ctx.label.name))
-    util_report = ctx.actions.declare_file("{}_util.rpt".format(ctx.label.name))
-    status_report = ctx.actions.declare_file("{}_status.rpt".format(ctx.label.name))
-    io_report = ctx.actions.declare_file("{}_io.rpt".format(ctx.label.name))
-    power_report = ctx.actions.declare_file("{}_power.rpt".format(ctx.label.name))
-    design_analysis_report = ctx.actions.declare_file("{}_design_analysis.rpt".format(ctx.label.name))
+    toolchain = get_vivado_toolchain(ctx)
 
-    checkpoint_in = ctx.attr.checkpoint[VivadoPlacementCheckpointInfo].checkpoint
+    route_checkpoint = ctx.actions.declare_file("{}.dcp".format(ctx.label.name))
+
+    upstream_place = ctx.attr.checkpoint[VivadoPlacementCheckpointInfo]
+    checkpoint_in = upstream_place.checkpoint
+    module_top = getattr(upstream_place, "module_top", "") or ""
+    part_number = getattr(upstream_place, "part_number", "") or ""
+    project_info = getattr(upstream_place, "project_info", None)
+    upstream_input_files = getattr(upstream_place, "input_files", None)
+
+    pre = hook_invocation(ctx, ctx.attr.pre_hooks)
+    post = hook_invocation(ctx, ctx.attr.post_hooks)
+    reports = reports_data(ctx, ctx.attr.reports)
+
+    validate_args(ctx.label, "route_args", ctx.attr.route_args, [])
 
     substitutions = {
         "{{CHECKPOINT_IN}}": checkpoint_in.path,
         "{{CHECKPOINT_OUT}}": route_checkpoint.path,
-        "{{DESIGN_ANALYSIS_REPORT}}": design_analysis_report.path,
-        "{{IO_REPORT}}": io_report.path,
-        "{{POWER_REPORT}}": power_report.path,
-        "{{ROUTE_DIRECTIVE}}": ctx.attr.route_directive,
-        "{{STATUS_REPORT}}": status_report.path,
+        "{{POST_HOOKS}}": post.files_literal,
+        "{{PRE_HOOKS}}": pre.files_literal,
+        "{{REPORT_COMMANDS}}": reports.commands_dict,
+        "{{REQUESTED_REPORTS}}": reports.requested,
+        "{{ROUTE_ARGS}}": tcl_args(ctx.attr.route_args),
         "{{THREADS}}": "{}".format(ctx.attr.threads),
-        "{{TIMING_REPORT}}": timing_summary_report.path,
-        "{{UTIL_REPORT}}": util_report.path,
     }
 
-    outputs = [
-        route_checkpoint,
-        timing_summary_report,
-        util_report,
-        status_report,
-        io_report,
-        power_report,
-        design_analysis_report,
-    ]
+    outputs = [route_checkpoint] + reports.files
 
-    default_info = run_tcl_template(
+    result = run_tcl_template(
         ctx = ctx,
+        toolchain = toolchain,
         template = ctx.file.route_template,
         substitutions = substitutions,
         input_files = [checkpoint_in],
         output_files = outputs,
         mnemonic = "VivadoRoute",
         jobs = ctx.attr.threads,
+        tools = pre.tools + post.tools,
+    )
+
+    upstream = ctx.attr.checkpoint[VivadoLogInfo]
+    logs = dict(upstream.logs)
+    journals = dict(upstream.journals)
+    logs["route"] = result.log
+    journals["route"] = result.journal
+
+    transitive_inputs = [upstream_input_files] if upstream_input_files else []
+    checkpoint_input_files = depset(
+        direct = [route_checkpoint],
+        transitive = transitive_inputs,
     )
 
     return [
-        default_info[0],
-        VivadoRoutingCheckpointInfo(checkpoint = route_checkpoint),
+        DefaultInfo(files = depset(result.outputs)),
+        VivadoRoutingCheckpointInfo(
+            checkpoint = route_checkpoint,
+            module_top = module_top,
+            part_number = part_number,
+            project_info = project_info,
+            input_files = checkpoint_input_files,
+            tcl = result.vivado_tcl,
+        ),
+        VivadoLogInfo(logs = logs, journals = journals),
+        VivadoReportsInfo(reports = reports.file_dict),
+        OutputGroupInfo(
+            log = depset(logs.values()),
+            reports = depset(reports.files),
+        ),
     ]
 
 vivado_routing = rule(
@@ -197,9 +345,13 @@ vivado_routing = rule(
             providers = [VivadoPlacementCheckpointInfo],
             mandatory = True,
         ),
-        "route_directive": attr.string(
-            doc = "The routing directive.",
-            default = "Explore",
+        "reports": attr.string_list(
+            doc = _REPORTS_ATTR_DOC,
+            default = _ROUTING_DEFAULT_REPORTS,
+        ),
+        "route_args": attr.string_list(
+            doc = "Extra flags passed through to `route_design`.",
+            default = [],
         ),
         "route_template": attr.label(
             doc = "The routing tcl template",
@@ -210,9 +362,16 @@ vivado_routing = rule(
             doc = "Threads to pass to vivado which defines the amount of parallelism.",
             default = 8,
         ),
-    },
+    } | hook_attrs(
+        post_doc = ("`.tcl`/`.xdc`/`.sdc` files OR `tcl_binary` targets " +
+                    "sourced after `route_design`, in list order."),
+        pre_doc = ("`.tcl`/`.xdc`/`.sdc` files OR `tcl_binary` targets " +
+                   "sourced on the opened checkpoint before `route_design`."),
+    ),
     provides = [
         DefaultInfo,
+        VivadoLogInfo,
+        VivadoReportsInfo,
         VivadoRoutingCheckpointInfo,
     ],
 )

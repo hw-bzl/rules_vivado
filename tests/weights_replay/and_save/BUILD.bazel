@@ -1,0 +1,88 @@
+load("@rules_verilog//verilog:defs.bzl", "verilog_library")
+load(
+    "//vivado:defs.bzl",
+    "vivado_ip_core",
+    "vivado_project",
+    "vivado_xsim_test",
+)
+
+# Nested-IP composition: wraps two `vivado_ip_core` outputs
+# (`weights_replay_ip` + `weights_ram_ip`) inside a BD-driven wrapper
+# IP, then exercises it via an xsim testbench and a create_project.
+#
+# This is the "IP blocks in IP blocks" edge case — proves the
+# transitive `ip_blocks` walk in `hdl_sources_data` reaches every
+# nested sub-IP source at synth/sim time.
+
+verilog_library(
+    name = "weights_ram",
+    srcs = ["weights_ram.sv"],
+)
+
+vivado_ip_core(
+    name = "weights_ram_ip",
+    encrypt = False,
+    ip_library = "test",
+    ip_vendor = "test_vendor",
+    ip_version = "0.1",
+    module = ":weights_ram",
+    module_top = "weights_ram",
+    part_number = "xczu3eg-sbva484-1-i",
+    tags = ["requires-vivado"],
+)
+
+verilog_library(
+    name = "weights_replay_and_save_bd",
+    data = ["weights_replay_and_save_bd.tcl"],
+)
+
+vivado_ip_core(
+    name = "weights_replay_and_save_ip",
+    ip_blocks = [
+        "//tests/weights_replay:weights_replay_ip",
+        ":weights_ram_ip",
+    ],
+    ip_library = "test",
+    ip_vendor = "test_vendor",
+    ip_version = "0.1",
+    module = ":weights_replay_and_save_bd",
+    module_top = "weights_replay_and_save",
+    part_number = "xczu3eg-sbva484-1-i",
+    tags = ["requires-vivado"],
+    visibility = ["//tests:__subpackages__"],
+)
+
+verilog_library(
+    name = "weights_replay_and_save_tb",
+    srcs = ["weights_replay_and_save_tb.sv"],
+)
+
+vivado_project(
+    name = "weights_replay_and_save_tb_project",
+    ip_blocks = [":weights_replay_and_save_ip"],
+    module = ":weights_replay_and_save_tb",
+    module_top = "weights_replay_and_save_tb",
+    part_number = "xczu3eg-sbva484-1-i",
+    tags = ["requires-vivado"],
+)
+
+vivado_xsim_test(
+    name = "weights_replay_and_save_xsim",
+    module_top = "weights_replay_and_save_tb",
+    project = ":weights_replay_and_save_tb_project",
+    tags = ["requires-vivado"],
+)
+
+verilog_library(
+    name = "weights_replay_and_save_wrapper",
+    srcs = ["weights_replay_and_save_wrapper.sv"],
+)
+
+vivado_project(
+    name = "weights_replay_and_save_project",
+    ip_blocks = [":weights_replay_and_save_ip"],
+    module = ":weights_replay_and_save_wrapper",
+    module_top = "weights_replay_and_save_wrapper",
+    part_number = "xczu3eg-sbva484-1-i",
+    tags = ["requires-vivado"],
+)

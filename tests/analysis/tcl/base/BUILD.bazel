@@ -1,0 +1,18 @@
+load("@rules_tcl//tcl:defs.bzl", "tcl_library")
+
+# The bottom of a two-level Tcl chain. Reachable from `:leaf` only
+# transitively, which is the whole point — it appears in a hook's
+# PRE_HOOKS under `incompatible_eager_tcl_hook_load` and nowhere else.
+# `//tests/analysis` also names it directly, alongside `:leaf`, to build
+# the doubly-reachable case `hook_source_once_test` reads.
+tcl_library(
+    name = "base",
+    srcs = [
+        "base.tcl",
+        "pkgIndex.tcl",
+    ],
+    visibility = [
+        "//tests/analysis:__pkg__",
+        "//tests/analysis/tcl:__pkg__",
+    ],
+)

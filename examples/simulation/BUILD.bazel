@@ -1,0 +1,12 @@
+load("@rules_verilog//verilog:defs.bzl", "verilog_library")
+
+# Shared testbench consumed by the three simulation subpackages
+# (`:xsim`, `:export`, `:simlib`). Kept in a dedicated top-level
+# package so each downstream demo shows a clean single-attr
+# `module = "//simulation:tb"` reference instead of loading
+# verilog_library alongside the simulation rules.
+verilog_library(
+    name = "tb",
+    srcs = ["tb.sv"],
+    visibility = ["//simulation:__subpackages__"],
+)

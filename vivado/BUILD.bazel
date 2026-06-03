@@ -1,4 +1,5 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("@rules_tcl//tcl:tcl_toolchain.bzl", "TOOLCHAIN_TYPE", "tcl_toolchain")
 
 package(
     default_applicable_licenses = ["//:package_license"],
@@ -9,12 +10,45 @@ toolchain_type(
     name = "toolchain_type",
 )
 
+# Vivado-flavored tcl toolchain. Produces a `.tcl` wrapper (not the default
+# `.sh` / `.bat`) that Vivado's embedded tclsh can `source` directly. No
+# tclcore / tcllib fields — Vivado bundles its own. `tclsh` is mandatory
+# upstream but never invoked at hook time (Vivado is the interpreter);
+# point it at a stub that fails loudly if anyone ever runs it.
+#
+# This toolchain is NOT registered via `register_toolchains(...)`. Every
+# rules_vivado hook attr applies `//vivado/private:transitions.bzl%hook_transition`,
+# which prepends this toolchain to `--extra_toolchains` — that gives it
+# priority-1 in toolchain resolution for the transitioned subgraph without
+# leaking into `tcl_binary` builds outside a hook attr.
+tcl_toolchain(
+    name = "vivado_tcl_toolchain_impl",
+    tclsh = "//vivado/private:tclsh_stub",
+    # Template basename is `vivado_hook_wrapper.vhook.tcl.tpl`, so
+    # rules_tcl's derivation yields `.vhook.tcl` for the wrapper output.
+    # The `.vhook` prefix keeps the wrapper from colliding with a user
+    # src file of the same base name (e.g. `tcl_binary(name = "my_hook",
+    # srcs = ["my_hook.tcl"])` would otherwise produce `my_hook.tcl`
+    # clashing with the src `my_hook.tcl` under `_main/…`). The trailing
+    # `.tcl` preserves editor / lint recognition.
+    wrapper_template = "//vivado/private:vivado_hook_wrapper.vhook.tcl.tpl",
+)
+
+toolchain(
+    name = "vivado_tcl_toolchain",
+    toolchain = ":vivado_tcl_toolchain_impl",
+    toolchain_type = TOOLCHAIN_TYPE,
+)
+
 bzl_library(
     name = "bzl_lib",
     srcs = glob(["*.bzl"]),
     visibility = ["//visibility:public"],
     deps = [
         "//vivado/private:bzl_lib",
+        "@bazel_skylib//lib:shell",
+        "@bazel_skylib//rules:common_settings",
+        "@rules_tcl//tcl:bzl_lib",
         "@rules_verilog//verilog:defs_bzl",
         "@rules_vhdl//vhdl:defs_bzl",
     ],

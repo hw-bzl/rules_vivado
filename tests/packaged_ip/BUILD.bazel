@@ -1,0 +1,38 @@
+load("@bazel_skylib//rules:build_test.bzl", "build_test")
+load("@bazel_skylib//rules:write_file.bzl", "write_file")
+load("@rules_verilog//verilog:defs.bzl", "verilog_library")
+load("//vivado:defs.bzl", "vivado_packaged_ip")
+
+# `vivado_packaged_ip` — smoke test that the `hdl_libraries` provider
+# path stages each transitive HDL file alongside anything in `srcs`.
+# The rule action is pure `mkdir -p && cp -L`; no Vivado invocation,
+# so the target builds without a real Vivado toolchain and doesn't
+# need the `requires-vivado` tag.
+
+write_file(
+    name = "component_xml",
+    out = "component.xml",
+    content = ["<spirit:component/>"],
+)
+
+write_file(
+    name = "top_sv",
+    out = "top.sv",
+    content = ["module top; endmodule"],
+)
+
+verilog_library(
+    name = "top",
+    srcs = [":top_sv"],
+)
+
+vivado_packaged_ip(
+    name = "hdl_libraries_repo",
+    srcs = [":component_xml"],
+    hdl_libraries = [":top"],
+)
+
+build_test(
+    name = "hdl_libraries_test",
+    targets = [":hdl_libraries_repo"],
+)

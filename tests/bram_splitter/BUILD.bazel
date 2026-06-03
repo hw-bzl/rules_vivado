@@ -1,0 +1,177 @@
+load("@rules_verilog//verilog:defs.bzl", "verilog_library")
+load(
+    "//tests:transition.bzl",
+    "with_vivado_version",
+)
+load(
+    "//vivado:defs.bzl",
+    "vivado_interface_definition",
+    "vivado_interface_ip",
+    "vivado_ip_core",
+    "vivado_project",
+)
+
+# 2025.1-only interface + IP chain. Every rule below is
+# `target_compatible_with` `//vivado/constraints/version:2025.1`
+# (via `_REQUIRES_VIVADO_2025_1`) and tagged `requires-vivado`.
+# `:all_bram_2025_1` uses `with_vivado_version` to transition the
+# whole group under the matching platform + toolchain in one shot.
+
+_REQUIRES_VIVADO_2025_1 = ["//vivado/constraints/version:2025.1"]
+
+vivado_interface_definition(
+    name = "bram_read_only_interface",
+    src = "bram_read_only_if.sv",
+    description = "Read-only BRAM interface with address, enable, data, and valid",
+    interface_name = "bram_read_only_if",
+    library = "interfaces",
+    tags = ["requires-vivado"],
+    target_compatible_with = _REQUIRES_VIVADO_2025_1,
+    vendor = "test_vendor",
+    version = "1.0",
+)
+
+vivado_interface_definition(
+    name = "bram_write_only_interface",
+    src = "bram_write_only_if.sv",
+    description = "Write-only BRAM interface with address, enable, byte-write-enable, and data",
+    interface_name = "bram_write_only_if",
+    library = "interfaces",
+    tags = ["requires-vivado"],
+    target_compatible_with = _REQUIRES_VIVADO_2025_1,
+    vendor = "test_vendor",
+    version = "1.0",
+)
+
+verilog_library(
+    name = "bram_read_only_if",
+    srcs = ["bram_read_only_if.sv"],
+    data = [":bram_read_only_interface"],
+)
+
+verilog_library(
+    name = "bram_write_only_if",
+    srcs = ["bram_write_only_if.sv"],
+    data = [":bram_write_only_interface"],
+)
+
+verilog_library(
+    name = "bram_read_write_splitter",
+    srcs = ["bram_read_write_splitter.sv"],
+    deps = [
+        ":bram_read_only_if",
+        ":bram_write_only_if",
+    ],
+)
+
+vivado_interface_ip(
+    name = "bram_read_only_interface_ip",
+    interface = ":bram_read_only_interface",
+    module = ":bram_read_only_if",
+    tags = ["requires-vivado"],
+    target_compatible_with = _REQUIRES_VIVADO_2025_1,
+)
+
+vivado_interface_ip(
+    name = "bram_write_only_interface_ip",
+    interface = ":bram_write_only_interface",
+    module = ":bram_write_only_if",
+    tags = ["requires-vivado"],
+    target_compatible_with = _REQUIRES_VIVADO_2025_1,
+)
+
+verilog_library(
+    name = "bram_read_write_splitter_wrapper",
+    srcs = ["bram_read_write_splitter_wrapper.sv"],
+    deps = [":bram_read_write_splitter"],
+)
+
+vivado_ip_core(
+    name = "bram_read_write_splitter_ip",
+    ip_blocks = [
+        ":bram_read_only_interface_ip",
+        ":bram_write_only_interface_ip",
+    ],
+    ip_library = "ip",
+    ip_vendor = "test_vendor",
+    ip_version = "1.0",
+    module = ":bram_read_write_splitter_wrapper",
+    module_top = "bram_read_write_splitter_wrapper",
+    part_number = "xczu3eg-sbva484-1-i",
+    tags = ["requires-vivado"],
+    target_compatible_with = _REQUIRES_VIVADO_2025_1,
+)
+
+verilog_library(
+    name = "test_reader",
+    srcs = ["test_reader.sv"],
+    data = [":bram_read_only_interface"],
+)
+
+vivado_ip_core(
+    name = "test_reader_ip",
+    ip_blocks = [":bram_read_only_interface_ip"],
+    ip_library = "ip",
+    ip_vendor = "test_vendor",
+    ip_version = "1.0",
+    module = ":test_reader",
+    module_top = "test_reader",
+    part_number = "xczu3eg-sbva484-1-i",
+    tags = ["requires-vivado"],
+    target_compatible_with = _REQUIRES_VIVADO_2025_1,
+)
+
+verilog_library(
+    name = "test_writer",
+    srcs = ["test_writer.sv"],
+    data = [":bram_write_only_interface"],
+)
+
+vivado_ip_core(
+    name = "test_writer_ip",
+    ip_blocks = [":bram_write_only_interface_ip"],
+    ip_library = "ip",
+    ip_vendor = "test_vendor",
+    ip_version = "1.0",
+    module = ":test_writer",
+    module_top = "test_writer",
+    part_number = "xczu3eg-sbva484-1-i",
+    tags = ["requires-vivado"],
+    target_compatible_with = _REQUIRES_VIVADO_2025_1,
+)
+
+verilog_library(
+    name = "interface_example_top",
+    srcs = ["interface_example_top.sv"],
+    data = ["interface_example.tcl"],
+)
+
+vivado_project(
+    name = "interface_example_project",
+    ip_blocks = [
+        ":bram_read_only_interface_ip",
+        ":bram_write_only_interface_ip",
+        ":bram_read_write_splitter_ip",
+        ":test_reader_ip",
+        ":test_writer_ip",
+    ],
+    module = ":interface_example_top",
+    module_top = "interface_example_top",
+    part_number = "xczu3eg-sbva484-1-i",
+    tags = ["requires-vivado"],
+    target_compatible_with = _REQUIRES_VIVADO_2025_1,
+)
+
+with_vivado_version(
+    name = "all_bram_2025_1",
+    tags = ["requires-vivado"],
+    targets = [
+        ":bram_read_only_interface_ip",
+        ":bram_write_only_interface_ip",
+        ":bram_read_write_splitter_ip",
+        ":test_reader_ip",
+        ":test_writer_ip",
+        ":interface_example_project",
+    ],
+    vivado_version = "2025.1",
+)

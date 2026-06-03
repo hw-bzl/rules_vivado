@@ -1,0 +1,97 @@
+# Emitted by `vivado_export_simulation` / `vivado_xsim_test`. Sources
+# the `vivado_project`-emitted project script, generates simulation
+# targets on any BDs, sets the simulation-fileset top, and runs
+# `export_simulation` to hand off to the third-party simulator (or
+# xsim itself).
+
+set SIM_TOP   {{SIM_TOP}}
+set SIMULATOR {{SIMULATOR}}
+set EXPORT_DIR {{EXPORT_DIR}}
+
+set PRE_HOOKS  {{PRE_HOOKS}}
+set POST_HOOKS {{POST_HOOKS}}
+
+# `export_simulation` traces IP runs off a named on-disk project — an
+# `-in_memory` project misses generated sim products for some IP/BD
+# combinations. Pre-set PROJECT_MODE so the emitted project.tcl doesn't
+# fall back to its env-var / default resolution.
+set PROJECT_MODE "project"
+set PROJECT_DIR  "{{PROJECT_DIR}}"
+
+# Source the vivado_project script.
+source {{PROJECT_TCL}}
+
+# Upgrade IPs registered with an older catalog before BD `generate_target`
+# runs. Without this, BDs whose per-IP versions differ from the current
+# catalog (typical after a Vivado version bump) fail with `[BD 41-1664]
+# Unable to generate target(s) ... is locked. List of locked IPs: ...`.
+# `if [llength]` avoids `get_ips` empty-list complaints.
+set _ips [get_ips -quiet]
+if {[llength $_ips]} { upgrade_ip -quiet $_ips }
+
+# Generate sim targets on the BDs the project script added. Nested child
+# BDs (owned by a parent through a block-design container) are skipped —
+# Vivado errors with `[Vivado 12-3563]` if you regenerate one directly.
+# They are recognised by Vivado's own bookkeeping (`IS_GENERATED`, or a
+# `PARENT_COMPOSITE_FILE`), the same guard `synthesis.tcl.template` uses.
+# A path heuristic is NOT safe here: the BD path includes the Bazel
+# package and the BD name, so `*/ip/*` would skip every top-level BD in a
+# package named `ip`.
+foreach _bd [get_files -quiet "*.bd"] {
+    if {[get_property IS_GENERATED $_bd] ||
+        [get_property -quiet PARENT_COMPOSITE_FILE $_bd] ne ""} {
+        continue
+    }
+    generate_target simulation $_bd
+}
+
+# Without a current compile order, BDs that haven't been generated yet
+# can end up missing from the exported source list.
+update_compile_order -fileset sources_1
+
+# PRE_HOOKS: fires post-project-setup + sim elaboration, on the fully
+# elaborated design, before `export_simulation` runs.
+foreach hook $PRE_HOOKS { source $hook }
+
+# `export_simulation` refuses to run without a top on the simulation
+# fileset (`[exportsim-Tcl-70] A simulation top was not set`).
+set_property top $SIM_TOP [current_fileset -simset]
+
+# `-export_source_files` physically copies IP/BD sources into the export
+# tree — otherwise compile.do references project-relative paths that go
+# stale once the sandbox is gone.
+export_simulation \
+    -simulator $SIMULATOR \
+    -directory $EXPORT_DIR \
+    -export_source_files \
+    -force
+
+# `-export_source_files` only copies compile_order files (.v/.sv/.vhd), not
+# `.vh` Verilog headers. Copy each header into every IP subdir so `include`
+# resolves via same-dir search (no `+incdir+` patching of compile.do).
+set _vh_files [get_files -filter {FILE_TYPE == "Verilog Header"}]
+if {[llength $_vh_files] > 0} {
+    foreach _ip_dir [glob -nocomplain -directory $EXPORT_DIR/$SIMULATOR/srcs/ip -type d "*/*"] {
+        foreach _vh $_vh_files {
+            file copy -force $_vh $_ip_dir/[file tail $_vh]
+        }
+    }
+}
+
+# Per-simulator driver conventions vary — questa/modelsim emit `compile.do`,
+# xsim emits `<sim_top>.sh` + `vlog.prj`, xcelium emits `cxl.compile.sh`.
+# Just verify SOME `.sh` driver landed under `<EXPORT_DIR>/<SIMULATOR>/`.
+set _driver_scripts [glob -nocomplain -type f "$EXPORT_DIR/$SIMULATOR/*.sh"]
+if {[llength $_driver_scripts] == 0} {
+    error "export_simulation produced no driver `.sh` under\
+ $EXPORT_DIR/$SIMULATOR/ — the IP/BD set likely contains no sim\
+ sources, or `generate_target simulation` silently skipped them.\
+ Check that every ip_block / block_design has simulation products\
+ in the project before export."
+}
+
+# POST_HOOKS: project still open, EXPORT_DIR populated, `get_files` /
+# `get_ips` still resolve.
+foreach hook $POST_HOOKS { source $hook }
+
+close_project

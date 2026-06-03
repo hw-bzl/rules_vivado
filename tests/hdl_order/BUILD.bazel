@@ -1,0 +1,138 @@
+load("@rules_venv//python:defs.bzl", "py_test")
+load("@rules_verilog//verilog:defs.bzl", "verilog_library")
+load("//tests/analysis:analysis_test.bzl", "project_xdc_order_test")
+load("//vivado:defs.bzl", "vivado_project", "xdc_library")
+
+# Pin the file order the `vivado_project`-emitted `.project.tcl`
+# produces for a nested `verilog_library` tree with mixed HDL + XDC
+# content. The order is load-bearing for Vivado — constraints applied
+# in the wrong order can shift placement / silently mask timing —
+# and it's produced by `hdl_sources_data` in `//vivado/private:common.bzl`,
+# which walks `VerilogInfo.deps.to_list() + [self]`. Depset default
+# ordering ("default" / topological) means deeper deps come before
+# the target that pulls them in.
+#
+# Layered dep chain: a -> b -> c -> top. Each library ships a matching
+# `.xdc` in its `data` slot. The emitted TCL therefore holds:
+#
+#   HDL_SOURCES: a.sv, b.sv, c.sv, top.sv
+#   XDC_FILES:   a.xdc, b.xdc, c.xdc, top.xdc
+#
+# `vivado_project.data` is the escape hatch for order-sensitive
+# constraint files. Its `label_list(allow_files = [".xdc", ".sdc",
+# ".tcl"])` accepts BOTH plain files AND targets — an `xdc_library`
+# target's `DefaultInfo.files` is a topological depset, so its
+# transitive constraints expand IN PLACE (dep-first) at the position
+# it occupies in the `data` list. The test mixes both shapes to
+# demonstrate:
+#
+#   data = ["xdc_a.xdc", ":lib_z", "xdc_b.xdc", "xdc_c.xdc"]
+#
+#   ->  PROJECT_DATA_FILES:
+#         xdc_a.xdc          (plain file, position 1)
+#         xdc_lib_x.xdc      (:lib_z chain — deep dep first)
+#         xdc_lib_y.xdc      (:lib_z chain — middle)
+#         xdc_lib_z.xdc      (:lib_z chain — target itself)
+#         xdc_b.xdc          (plain file, position 3)
+#         xdc_c.xdc          (plain file, position 4)
+#
+# `hdl_order_test.py` reads the emitted script (via `python.runfiles`)
+# and parses each list into a Python list for a clear equality assert.
+# `vivado_project` is a spec-only rule (no Vivado invocation), so this
+# test builds without a Vivado toolchain and doesn't need the
+# `requires-vivado` tag.
+
+verilog_library(
+    name = "a",
+    srcs = ["a.sv"],
+    data = ["a.xdc"],
+)
+
+verilog_library(
+    name = "b",
+    srcs = ["b.sv"],
+    data = ["b.xdc"],
+    deps = [":a"],
+)
+
+verilog_library(
+    name = "c",
+    srcs = ["c.sv"],
+    data = ["c.xdc"],
+    deps = [":b"],
+)
+
+verilog_library(
+    name = "top",
+    srcs = ["top.sv"],
+    data = ["top.xdc"],
+    deps = [":c"],
+)
+
+# Three-level xdc_library chain for the topological-expansion case in
+# vivado_project.data. Only :lib_z is listed on the project; the deps
+# ride along transitively in dep-first order.
+xdc_library(
+    name = "lib_x",
+    srcs = ["xdc_lib_x.xdc"],
+)
+
+xdc_library(
+    name = "lib_y",
+    srcs = ["xdc_lib_y.xdc"],
+    deps = [":lib_x"],
+)
+
+xdc_library(
+    name = "lib_z",
+    srcs = ["xdc_lib_z.xdc"],
+    deps = [":lib_y"],
+)
+
+vivado_project(
+    name = "order_project",
+    # List order IS the load order Vivado sees. Plain files sit at
+    # their listed position; xdc_library targets expand in place with
+    # their transitive dep closure in topological order.
+    #
+    # `# do not sort` is load-bearing: buildifier sorts `data` lists by
+    # default, and doing so here silently rewrites the constraint load
+    # order. Any `vivado_project.data` whose order matters needs this.
+    # do not sort
+    data = [
+        "xdc_a.xdc",
+        ":lib_z",
+        "xdc_b.xdc",
+        "xdc_c.xdc",
+    ],
+    module = ":top",
+    module_top = "top",
+    part_number = "xc7a35ticsg324-1L",
+)
+
+# Same invariant as `hdl_order_test` below, asserted one layer up:
+# `VivadoProjectInfo.xdc` is what downstream consumers introspect, and
+# it has to advertise the SAME order the emitted script loads. Pinning
+# both keeps the provider from drifting into a `direct`/`transitive`
+# depset split, which would hoist all `xdc_library` content ahead of the
+# plain files.
+project_xdc_order_test(
+    name = "project_xdc_order_test",
+    expected = [
+        "xdc_a.xdc",
+        "xdc_lib_x.xdc",
+        "xdc_lib_y.xdc",
+        "xdc_lib_z.xdc",
+        "xdc_b.xdc",
+        "xdc_c.xdc",
+    ],
+    target_under_test = ":order_project",
+)
+
+py_test(
+    name = "hdl_order_test",
+    srcs = ["hdl_order_test.py"],
+    data = [":order_project"],
+    env = {"PROJECT_RLOCATIONPATH": "$(rlocationpath :order_project)"},
+    deps = ["@rules_venv//python/runfiles"],
+)

@@ -1,0 +1,30 @@
+# vivado_project_export driver. Sources the caller's `vivado_project`
+# TCL to load the project, then sources the user's Tcl. The user Tcl is
+# responsible for producing every path listed in `$OUTS` / `$OUT_DIRS`;
+# Bazel fails the action if any declared output is missing.
+#
+# Pre-set variables visible to the user script:
+#   OUTS       — Tcl list of declared file output paths, in declared order
+#   OUT_DIRS   — Tcl list of declared directory output paths, in declared order
+#   PROJECT_DIR — directory holding the on-disk project (writable)
+
+set OUTS        {{OUTS}}
+set OUT_DIRS    {{OUT_DIRS}}
+set PRE_HOOKS   {{PRE_HOOKS}}
+set POST_HOOKS  {{POST_HOOKS}}
+set USER_SCRIPT {{USER_SCRIPT}}
+
+# Load the caller's project. Force a named on-disk project rooted at
+# CWD (Bazel action working dir) so any scratch state the project's
+# generate_target calls emit lands within the sandbox.
+set PROJECT_MODE "project"
+set PROJECT_DIR  [pwd]
+source {{PROJECT_TCL}}
+
+foreach hook $PRE_HOOKS { source $hook }
+
+source $USER_SCRIPT
+
+foreach hook $POST_HOOKS { source $hook }
+
+close_project

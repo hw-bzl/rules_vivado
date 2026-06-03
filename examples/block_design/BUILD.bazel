@@ -1,0 +1,25 @@
+load("@rules_tcl//tcl:tcl_binary.bzl", "tcl_binary")
+load("@rules_vivado//vivado:defs.bzl", "vivado_block_design")
+
+tcl_binary(
+    name = "loopback_bd_tcl",
+    srcs = ["loopback_bd.tcl"],
+    deps = ["//block_design/helpers:bd_helpers"],
+)
+
+# vivado_block_design — evaluate a Tcl script under `create_bd_design`
+# and stage the resulting `.bd` tree as a TreeArtifact.
+#
+# The Tcl script IS the source of truth; the rule doesn't try to
+# generate BDs from HDL. `script` takes an executable target — in
+# practice a `tcl_binary`, as shown here. That's the only shape that
+# carries `deps`, so the script can `package require` shared
+# `tcl_library` helpers and the wrapper handles runfile staging and
+# toolchain resolution. A self-contained script gets the same three-line
+# wrap; a raw `.tcl` file is not accepted.
+vivado_block_design(
+    name = "loopback_bd",
+    module_top = "loopback",
+    part_number = "xc7a35ticsg324-1L",
+    script = ":loopback_bd_tcl",
+)

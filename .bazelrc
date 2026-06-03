@@ -29,8 +29,29 @@ build --incompatible_default_to_explicit_init_py
 # https://github.com/bazelbuild/bazel/issues/23043.
 build --incompatible_autoload_externally=
 
+# Improve build speed by not rendering runfiles symlinks
+build --nobuild_runfile_links
+
 # Show test failures
 common --test_output=errors
+
+###############################################################################
+## Vivado-target gate.
+##
+## Default: skip anything tagged `requires-vivado` so `bazel build //...`
+## works on a machine without a real Vivado install (or on CI). Opt in via
+## `--config=vivado` when Vivado IS available — or via `--config=fpga-local`
+## / `--config=rbe` in user.bazelrc, both of which extend `:vivado`.
+###############################################################################
+
+build --build_tag_filters=-requires-vivado
+test --test_tag_filters=-requires-vivado
+
+# `--config=vivado` re-enables the tag. Set to empty string to REMOVE the
+# `-requires-vivado` filter — Bazel's last-wins semantics means the empty
+# value at the vivado config overrides the default filter above.
+build:vivado --build_tag_filters=
+test:vivado --test_tag_filters=
 
 ###############################################################################
 ## Custom user flags

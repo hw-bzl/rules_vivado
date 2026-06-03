@@ -1,0 +1,21 @@
+load("@rules_vivado//vivado:defs.bzl", "vivado_project", "vivado_xsim_test")
+
+# vivado_xsim_test — build a testbench + drive Vivado's built-in xsim
+# under `bazel test`. The rule handles the export-then-simulate dance
+# and translates the run's exit code / stdout into Bazel's pass/fail
+# contract. Waveforms (opt in via a pre_hooks Tcl script that sets
+# `xsim.simulate.log_all_signals`; see the integration workspace's
+# hooks/ demo) land under `$TEST_UNDECLARED_OUTPUTS_DIR`.
+
+vivado_project(
+    name = "hello_xsim_project",
+    module = "//simulation:tb",
+    module_top = "tb",
+    part_number = "xc7a35ticsg324-1L",
+)
+
+vivado_xsim_test(
+    name = "hello_xsim",
+    module_top = "tb",
+    project = ":hello_xsim_project",
+)

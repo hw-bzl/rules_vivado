@@ -1,0 +1,39 @@
+load("@rules_verilog//verilog:defs.bzl", "verilog_library")
+load("@rules_vhdl//vhdl:defs.bzl", "vhdl_library")
+load("//vivado:defs.bzl", "vivado_project", "vivado_synthesis")
+
+# Mixed-language design: a VHDL entity `pulse_wrapper` that
+# instantiates a Verilog module `pulse`. The cross-language wire
+# happens on the vhdl_library via `verilog_deps` — rules_vhdl
+# records the Verilog set on `VhdlInfo.verilog_deps`, and
+# rules_vivado's `hdl_sources_data` (common.bzl) walks that depset
+# so synth sees BOTH source kinds with the correct per-target
+# library/standard.
+
+verilog_library(
+    name = "pulse",
+    srcs = ["pulse.sv"],
+)
+
+vhdl_library(
+    name = "pulse_wrapper",
+    srcs = ["pulse_wrapper.vhd"],
+    library = "work",
+    standard = "2008",
+    top_entity = "pulse_wrapper",
+    verilog_deps = [":pulse"],
+)
+
+vivado_project(
+    name = "mixed_project",
+    module = ":pulse_wrapper",
+    module_top = "pulse_wrapper",
+    part_number = "xc7a35ticsg324-1L",
+    tags = ["requires-vivado"],
+)
+
+vivado_synthesis(
+    name = "mixed_synth",
+    project = ":mixed_project",
+    tags = ["requires-vivado"],
+)

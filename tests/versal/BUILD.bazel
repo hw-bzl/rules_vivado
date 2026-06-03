@@ -1,0 +1,113 @@
+load("@rules_tcl//tcl:defs.bzl", "tcl_binary")
+load("@rules_verilog//verilog:defs.bzl", "verilog_library")
+load(
+    "//vivado:defs.bzl",
+    "vivado_block_design",
+    "vivado_device_image",
+    "vivado_ip_core",
+    "vivado_place_optimize",
+    "vivado_placement",
+    "vivado_project",
+    "vivado_routing",
+    "vivado_synthesis",
+    "vivado_synthesis_optimize",
+)
+
+# Versal-specific scenario. Exists solely to exercise the
+# `vivado_device_image` (.pdi) code path. Targets Versal Prime
+# `xcvm1102` (the Versal subfamily buildable under Vivado ML
+# Standard; AI Core / Premium require the enterprise seat).
+#
+# Even a trivial `blink` cannot reach `place_design` on Versal —
+# DRC `CIPS-1` mandates a `versal_cips` cell in the netlist
+# hierarchy. So the flow is:
+#
+#   blink.sv (verilog_library)
+#     -> vivado_ip_core -> blink_ip (packaged Versal IP)
+#     -> vivado_block_design -> blink_bd (CIPS + blink_ip + LED port)
+#     -> vivado_synthesis -> blink_top wraps blink_bd
+#     -> ... -> vivado_device_image -> blink.pdi
+
+_VM1102 = "xcvm1102-sfva784-2MP-e-S"
+
+verilog_library(
+    name = "blink",
+    srcs = ["blink.sv"],
+)
+
+vivado_ip_core(
+    name = "blink_ip",
+    ip_library = "test",
+    ip_vendor = "test_vendor",
+    ip_version = "0.1",
+    module = ":blink",
+    module_top = "blink",
+    part_number = _VM1102,
+    tags = ["requires-vivado"],
+)
+
+tcl_binary(
+    name = "blink_bd_script",
+    srcs = ["blink_bd.tcl"],
+    tags = ["manual"],
+)
+
+vivado_block_design(
+    name = "blink_bd",
+    ip_blocks = [":blink_ip"],
+    module_top = "blink_bd",
+    part_number = _VM1102,
+    script = ":blink_bd_script",
+    tags = ["requires-vivado"],
+)
+
+verilog_library(
+    name = "blink_top",
+    srcs = ["blink_top.sv"],
+    data = ["vm1102.xdc"],
+)
+
+vivado_project(
+    name = "blink_project",
+    block_designs = [":blink_bd"],
+    module = ":blink_top",
+    module_top = "blink_top",
+    part_number = _VM1102,
+    tags = ["requires-vivado"],
+)
+
+vivado_synthesis(
+    name = "blink_synth",
+    project = ":blink_project",
+    tags = ["requires-vivado"],
+)
+
+vivado_synthesis_optimize(
+    name = "blink_synth_opt",
+    checkpoint = ":blink_synth",
+    tags = ["requires-vivado"],
+)
+
+vivado_placement(
+    name = "blink_placement",
+    checkpoint = ":blink_synth_opt",
+    tags = ["requires-vivado"],
+)
+
+vivado_place_optimize(
+    name = "blink_place_opt",
+    checkpoint = ":blink_placement",
+    tags = ["requires-vivado"],
+)
+
+vivado_routing(
+    name = "blink_route",
+    checkpoint = ":blink_place_opt",
+    tags = ["requires-vivado"],
+)
+
+vivado_device_image(
+    name = "blink_pdi",
+    checkpoint = ":blink_route",
+    tags = ["requires-vivado"],
+)

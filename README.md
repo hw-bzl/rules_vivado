@@ -18,14 +18,17 @@ The public surface is:
   every `vivado_*` rule resolves it through Bazel toolchain
   resolution.
 - **Per-phase rules** —
-  [`vivado_synthesize`](https://hw-bzl.github.io/rules_vivado/vivado_synthesis.html),
+  [`vivado_project`](https://hw-bzl.github.io/rules_vivado/vivado_project.html) +
+  [`vivado_synthesis`](https://hw-bzl.github.io/rules_vivado/vivado_synthesis.html),
   [`vivado_placement` / `vivado_routing`](https://hw-bzl.github.io/rules_vivado/vivado_implementation.html),
-  [`vivado_write_bitstream`](https://hw-bzl.github.io/rules_vivado/vivado_bitstream.html),
-  plus [`vivado_create_project`](https://hw-bzl.github.io/rules_vivado/vivado_project.html),
-  [IP packaging](https://hw-bzl.github.io/rules_vivado/vivado_ip.html),
-  and [`xsim_test`](https://hw-bzl.github.io/rules_vivado/vivado_simulation.html).
-- **`vivado_flow`** — convenience macro chaining
-  synthesis → opt → placement → place-opt → routing → bitstream.
+  [`vivado_bitstream`](https://hw-bzl.github.io/rules_vivado/vivado_bitstream.html),
+  plus [IP composition](https://hw-bzl.github.io/rules_vivado/vivado_ip.html),
+  [block designs](https://hw-bzl.github.io/rules_vivado/vivado_block_design.html)
+  and [`vivado_xsim_test`](https://hw-bzl.github.io/rules_vivado/vivado_simulation.html).
+  Each phase is its own target, composed explicitly: synthesis -> opt ->
+  placement -> place-opt -> routing -> bitstream. See the
+  [rule flow](https://hw-bzl.github.io/rules_vivado/flow.html) for how
+  they connect.
 
 Quick start, toolchain authoring, multi-version constraint gating, and
 the full per-rule reference are hosted at

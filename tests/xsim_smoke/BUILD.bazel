@@ -1,0 +1,24 @@
+load("@rules_verilog//verilog:defs.bzl", "verilog_library")
+load("//vivado:defs.bzl", "vivado_project", "vivado_xsim_test")
+
+# Bare-minimum vivado_xsim_test — proves the export -> simulate pipeline
+# reaches `$finish` on a testbench that has no design under test.
+verilog_library(
+    name = "tb",
+    srcs = ["tb.sv"],
+)
+
+vivado_project(
+    name = "xsim_smoke_project",
+    module = ":tb",
+    module_top = "xsim_smoke_tb",
+    part_number = "xc7a35ticsg324-1L",
+    tags = ["requires-vivado"],
+)
+
+vivado_xsim_test(
+    name = "xsim_smoke_test",
+    module_top = "xsim_smoke_tb",
+    project = ":xsim_smoke_project",
+    tags = ["requires-vivado"],
+)

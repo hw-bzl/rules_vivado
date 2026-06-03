@@ -1,0 +1,450 @@
+load("@rules_tcl//tcl:defs.bzl", "tcl_binary")
+load("@rules_verilog//verilog:defs.bzl", "verilog_library")
+load(
+    "//vivado:defs.bzl",
+    "vivado_bitstream",
+    "vivado_block_design",
+    "vivado_compile_simlib",
+    "vivado_debug_probes",
+    "vivado_device_image",
+    "vivado_export_simulation",
+    "vivado_hw_platform",
+    "vivado_interface_definition",
+    "vivado_interface_ip",
+    "vivado_ip_core",
+    "vivado_packaged_ip",
+    "vivado_place_optimize",
+    "vivado_placement",
+    "vivado_project",
+    "vivado_project_export",
+    "vivado_routing",
+    "vivado_synthesis",
+    "vivado_synthesis_optimize",
+    "vivado_xci",
+    "vivado_xsim_test",
+    "xdc_library",
+)
+load(
+    ":analysis_test.bzl",
+    "analyzes_test_suite",
+    "eager_tcl_hook_load_test",
+    "external_tcl_hook_load_test",
+    "hook_pkg_index_test",
+    "hook_source_once_test",
+    "lazy_tcl_hook_load_test",
+    "project_export_outputs_test",
+    "script_tcl_closure_test",
+)
+
+# Analysis-only coverage: ONE instance of every rule the ruleset exports.
+#
+# Why this package exists: a rule implementation only runs if some target
+# instantiates it AND that target actually gets configured.
+# `vivado_project_export` shipped with a `declare_file(<Label>)` type
+# error precisely because neither ever happened. The functional tests
+# can't fill the gap — they're all
+# `target_compatible_with = ["//vivado/constraints/version:2025.1"]`, and
+# Bazel skips an incompatible target BEFORE running its rule
+# implementation, so off that platform they analyze to nothing.
+#
+# The targets below therefore carry NO `target_compatible_with`. They
+# resolve a toolchain through the exec platforms registered in
+# MODULE.bazel (`//tests/toolchains:vivado_2025_1_platform` supplies the
+# version constraint the `toolchain()` gates on), which is all analysis
+# needs. They DO carry `tags = ["requires-vivado"]`, because their
+# actions shell out to a real Vivado.
+#
+# That tag alone would defeat the purpose: the repo default
+# `--build_tag_filters=-requires-vivado` prunes at the analysis step, so
+# a tagged target named on the command line is never configured. A tag
+# filter only applies to targets named on the command line, though — so
+# the coverage comes from the `analyzes_test_suite` at the bottom.
+# Those `analysistest` targets are untagged, `bazel test //...` analyzes
+# them, and analyzing one forces Bazel to configure its
+# `target_under_test` without executing any of the actions that target
+# registers.
+#
+# Keep the instances AND the suite list exhaustive. Adding a rule to
+# `//vivado:defs.bzl` without adding both re-opens the hole.
+#
+# `vivado_toolchain` is the one export not instantiated here — it's
+# covered by `//tests/toolchains`, which every target below resolves
+# against.
+
+package(default_visibility = ["//visibility:private"])
+
+_VIVADO = ["requires-vivado"]
+
+_PART = "xc7a35ticsg324-1L"
+
+# ---------------------------------------------------------------------------
+# Spec-only rules — no Vivado invocation, so these build for real on CI.
+# ---------------------------------------------------------------------------
+
+verilog_library(
+    name = "top_lib",
+    srcs = ["top.sv"],
+    data = ["constraints.xdc"],
+)
+
+verilog_library(
+    name = "tb_lib",
+    srcs = ["tb.sv"],
+    deps = [":top_lib"],
+)
+
+verilog_library(
+    name = "pulse_if_lib",
+    srcs = ["pulse_if.sv"],
+)
+
+xdc_library(
+    name = "project_constraints",
+    srcs = ["project_scope.xdc"],
+)
+
+vivado_project(
+    name = "project",
+    data = [":project_constraints"],
+    module = ":top_lib",
+    module_top = "top",
+    part_number = _PART,
+    pre_hooks = ["hook.tcl"],
+    pre_hooks_early = ["hook.tcl"],
+)
+
+vivado_project(
+    name = "sim_project",
+    module = ":tb_lib",
+    module_top = "tb",
+    part_number = _PART,
+)
+
+# ---------------------------------------------------------------------------
+# Implementation phase chain: synth -> synth_opt -> place -> place_opt ->
+# route -> {bitstream, device_image, hw_platform, debug_probes}.
+# ---------------------------------------------------------------------------
+
+vivado_synthesis(
+    name = "synth",
+    project = ":project",
+    reports = ["utilization"],
+    synth_args = ["-flatten_hierarchy rebuilt"],
+    tags = _VIVADO,
+)
+
+vivado_synthesis_optimize(
+    name = "synth_opt",
+    checkpoint = ":synth",
+    reports = ["drc"],
+    tags = _VIVADO,
+)
+
+vivado_placement(
+    name = "place",
+    checkpoint = ":synth_opt",
+    reports = ["timing_summary"],
+    tags = _VIVADO,
+)
+
+vivado_place_optimize(
+    name = "place_opt",
+    checkpoint = ":place",
+    tags = _VIVADO,
+)
+
+vivado_routing(
+    name = "route",
+    checkpoint = ":place_opt",
+    reports = ["route_status"],
+    tags = _VIVADO,
+)
+
+# `write_args` + `timing_check` are exercised here so `validate_args` and
+# the Tcl-literal formatting run at analysis time too.
+vivado_bitstream(
+    name = "bitstream",
+    checkpoint = ":route",
+    post_hooks = ["hook.tcl"],
+    tags = _VIVADO,
+    timing_check = "warn",
+    write_args = ["-verbose"],
+)
+
+vivado_device_image(
+    name = "device_image",
+    checkpoint = ":route",
+    tags = _VIVADO,
+    timing_check = "none",
+    write_args = ["-verbose"],
+)
+
+vivado_hw_platform(
+    name = "hw_platform",
+    checkpoint = ":route",
+    tags = _VIVADO,
+)
+
+vivado_debug_probes(
+    name = "debug_probes",
+    checkpoint = ":route",
+    tags = _VIVADO,
+)
+
+# ---------------------------------------------------------------------------
+# Escape hatch + simulation.
+# ---------------------------------------------------------------------------
+
+vivado_project_export(
+    name = "project_export",
+    outs = ["part.txt"],
+    out_dirs = ["reports"],
+    project = ":project",
+    script = ":export_script",
+    tags = _VIVADO,
+)
+
+tcl_binary(
+    name = "export_script",
+    srcs = ["export.tcl"],
+)
+
+vivado_export_simulation(
+    name = "export_sim",
+    module_top = "tb",
+    project = ":sim_project",
+    simulator = "xsim",
+    tags = _VIVADO,
+)
+
+vivado_xsim_test(
+    name = "xsim_test",
+    module_top = "tb",
+    project = ":sim_project",
+    tags = _VIVADO,
+)
+
+# `questa` (not `riviera`/`activehdl`): those two claim a FlexLM resource
+# from `_DEFAULT_LICENSE_RESOURCE_BY_SIMULATOR`, and Bazel rejects the
+# action outright unless the caller wired the pool with
+# `--local_extra_resources=riviera_license=N`.
+vivado_compile_simlib(
+    name = "simlib",
+    family = "artix7",
+    simulator = "questa",
+    tags = _VIVADO,
+)
+
+# ---------------------------------------------------------------------------
+# IP + block-design composition.
+# ---------------------------------------------------------------------------
+
+tcl_binary(
+    name = "bd_script",
+    srcs = ["bd.tcl"],
+)
+
+tcl_binary(
+    name = "xci_script",
+    srcs = ["xci.tcl"],
+)
+
+vivado_block_design(
+    name = "block_design",
+    module_top = "analysis_bd",
+    part_number = _PART,
+    project_hooks = ["hook.tcl"],
+    script = ":bd_script",
+    tags = _VIVADO,
+)
+
+# A `tcl_library` passed straight through a hook attr — the shape that
+# lets one library serve both hook consumers and `package require`
+# consumers. `hook_pkg_index_test` reads this target's PRE_HOOKS.
+vivado_block_design(
+    name = "block_design_library_hook",
+    module_top = "analysis_bd",
+    part_number = _PART,
+    pre_hooks = ["//tests/hooks/helpers:vivado_hook_helpers"],
+    script = ":bd_script",
+    tags = _VIVADO,
+)
+
+# A hook whose `tcl_library` has a dep of its own. Read by both
+# `lazy_tcl_hook_load_test` and `eager_tcl_hook_load_test` — the same
+# target under two settings of
+# `//vivado/settings:incompatible_eager_tcl_hook_load`.
+vivado_block_design(
+    name = "block_design_transitive_hook",
+    module_top = "analysis_bd",
+    part_number = _PART,
+    pre_hooks = ["//tests/analysis/tcl:leaf"],
+    script = ":bd_script",
+    tags = _VIVADO,
+)
+
+# EAGER-TCL-HOOK-LOAD: delete with the flag.
+# A hook closure that crosses into another repo. Read by
+# `external_tcl_hook_load_test` — eager loading must not reach
+# `@rules_tcl//tcl/runfiles`.
+vivado_block_design(
+    name = "block_design_external_hook",
+    module_top = "analysis_bd",
+    part_number = _PART,
+    pre_hooks = ["//tests/analysis/tcl:external_dep"],
+    script = ":bd_script",
+    tags = _VIVADO,
+)
+
+# EAGER-TCL-HOOK-LOAD: delete with the flag.
+# A `script` that carries its own `tcl_library` closure and no hooks at
+# all. Read by `script_tcl_closure_test` — `script` deps must reach the
+# sourced list the same way hook deps do.
+tcl_binary(
+    name = "bd_script_binary",
+    srcs = ["bd.tcl"],
+    deps = ["//tests/analysis/tcl:leaf"],
+)
+
+# EAGER-TCL-HOOK-LOAD: delete with the flag.
+vivado_block_design(
+    name = "block_design_script_closure",
+    module_top = "analysis_bd",
+    part_number = _PART,
+    script = ":bd_script_binary",
+    tags = _VIVADO,
+)
+
+# EAGER-TCL-HOOK-LOAD: delete with the flag.
+# `:base` is named directly AND reached through `:leaf`. Read by
+# `hook_source_once_test` — the duplicate must collapse.
+vivado_block_design(
+    name = "block_design_duplicate_hook",
+    module_top = "analysis_bd",
+    part_number = _PART,
+    pre_hooks = [
+        "//tests/analysis/tcl/base",
+        "//tests/analysis/tcl:leaf",
+    ],
+    script = ":bd_script",
+    tags = _VIVADO,
+)
+
+# `encrypt = True` so `encrypt_data`'s output declaration runs at analysis.
+vivado_ip_core(
+    name = "ip_core",
+    encrypt = True,
+    ip_library = "user",
+    ip_vendor = "rules_vivado.test",
+    ip_version = "1.0",
+    module = ":top_lib",
+    module_top = "top",
+    part_number = _PART,
+    tags = _VIVADO,
+)
+
+vivado_xci(
+    name = "xci",
+    module_top = "analysis_xci",
+    part_number = _PART,
+    script = ":xci_script",
+    tags = _VIVADO,
+)
+
+vivado_interface_definition(
+    name = "pulse_interface",
+    src = "pulse_if.sv",
+    description = "Valid/ready pulse handshake",
+    interface_name = "pulse_if",
+    tags = _VIVADO,
+    vendor = "rules_vivado.test",
+    version = "1.0",
+)
+
+vivado_interface_ip(
+    name = "pulse_interface_ip",
+    interface = ":pulse_interface",
+    module = ":pulse_if_lib",
+    tags = _VIVADO,
+)
+
+vivado_packaged_ip(
+    name = "packaged_ip",
+    srcs = ["component.xml"],
+    hdl_libraries = [":top_lib"],
+)
+
+# ---------------------------------------------------------------------------
+# The tests that actually force the analysis above to happen.
+# ---------------------------------------------------------------------------
+
+analyzes_test_suite(
+    name = "analysis_test_suite",
+    # `xdc_library` forwards its srcs + deps into a depset and registers
+    # nothing — the only export for which "no actions" is correct.
+    action_free = [":project_constraints"],
+    targets = [
+        ":bitstream",
+        ":block_design",
+        ":block_design_library_hook",
+        ":block_design_transitive_hook",
+        ":debug_probes",
+        ":device_image",
+        ":export_sim",
+        ":hw_platform",
+        ":ip_core",
+        ":packaged_ip",
+        ":place",
+        ":place_opt",
+        ":project",
+        ":project_constraints",
+        ":project_export",
+        ":pulse_interface",
+        ":pulse_interface_ip",
+        ":route",
+        ":sim_project",
+        ":simlib",
+        ":synth",
+        ":synth_opt",
+        ":xci",
+        ":xsim_test",
+    ],
+)
+
+project_export_outputs_test(
+    name = "project_export_outputs_test",
+    target_under_test = ":project_export",
+)
+
+hook_pkg_index_test(
+    name = "hook_pkg_index_test",
+    target_under_test = ":block_design_library_hook",
+)
+
+# Same target under test, opposite settings of
+# `incompatible_eager_tcl_hook_load` — the pair is the flag's contract.
+lazy_tcl_hook_load_test(
+    name = "lazy_tcl_hook_load_test",
+    target_under_test = ":block_design_transitive_hook",
+)
+
+# EAGER-TCL-HOOK-LOAD: the three flag-gated tests below go with it.
+eager_tcl_hook_load_test(
+    name = "eager_tcl_hook_load_test",
+    target_under_test = ":block_design_transitive_hook",
+)
+
+external_tcl_hook_load_test(
+    name = "external_tcl_hook_load_test",
+    target_under_test = ":block_design_external_hook",
+)
+
+hook_source_once_test(
+    name = "hook_source_once_test",
+    target_under_test = ":block_design_duplicate_hook",
+)
+
+script_tcl_closure_test(
+    name = "script_tcl_closure_test",
+    target_under_test = ":block_design_script_closure",
+)

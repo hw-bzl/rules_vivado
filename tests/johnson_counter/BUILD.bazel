@@ -1,0 +1,94 @@
+load("@bazel_skylib//rules:write_file.bzl", "write_file")
+load("@rules_verilog//verilog:defs.bzl", "verilog_library")
+load(
+    "//vivado:defs.bzl",
+    "vivado_bitstream",
+    "vivado_place_optimize",
+    "vivado_placement",
+    "vivado_project",
+    "vivado_routing",
+    "vivado_synthesis",
+    "vivado_synthesis_optimize",
+)
+
+# Full synth -> bitstream flow against a small counter design,
+# composed from the individual phase rules. Targets the Digilent
+# Arty A7-35T (Artix-7 pure FPGA — no PS integration).
+
+write_file(
+    name = "test_mem",
+    out = "test.mem",
+    content = [
+        "00",
+        "05",
+        "0A",
+        "0F",
+        "14",
+        "19",
+        "1E",
+        "28",
+        "",
+    ],
+    newline = "unix",
+    visibility = ["//tests:__subpackages__"],
+)
+
+verilog_library(
+    name = "johnson_counter",
+    srcs = ["johnson_counter.sv"],
+    data = ["test.mem"],
+    visibility = ["//tests:__subpackages__"],
+)
+
+verilog_library(
+    name = "johnson_counter_top",
+    srcs = ["johnson_counter_top.sv"],
+    data = ["io_constraints.xdc"],
+    deps = [":johnson_counter"],
+)
+
+_ARTY_A7 = "xc7a35ticsg324-1L"
+
+vivado_project(
+    name = "johnson_counter_project",
+    module = ":johnson_counter_top",
+    module_top = "johnson_counter_top",
+    part_number = _ARTY_A7,
+    tags = ["requires-vivado"],
+)
+
+vivado_synthesis(
+    name = "johnson_counter_synth",
+    project = ":johnson_counter_project",
+    tags = ["requires-vivado"],
+)
+
+vivado_synthesis_optimize(
+    name = "johnson_counter_synth_opt",
+    checkpoint = ":johnson_counter_synth",
+    tags = ["requires-vivado"],
+)
+
+vivado_placement(
+    name = "johnson_counter_placement",
+    checkpoint = ":johnson_counter_synth_opt",
+    tags = ["requires-vivado"],
+)
+
+vivado_place_optimize(
+    name = "johnson_counter_place_opt",
+    checkpoint = ":johnson_counter_placement",
+    tags = ["requires-vivado"],
+)
+
+vivado_routing(
+    name = "johnson_counter_route",
+    checkpoint = ":johnson_counter_place_opt",
+    tags = ["requires-vivado"],
+)
+
+vivado_bitstream(
+    name = "johnson_counter_bitstream",
+    checkpoint = ":johnson_counter_route",
+    tags = ["requires-vivado"],
+)

@@ -2,17 +2,18 @@
 `--extra_execution_platforms` to the matching `//tests/toolchains:vivado_{ver}_platform`
 for a set of target labels.
 
-Build the wrapper itself (e.g. `bazel build //tests:all_bram_2025_1`) and every
-target in `targets` is built under the transitioned config — including ones
-that are `target_compatible_with` incompatible at the default platform or
-tagged `manual` so they don't show up under `//...` on their own. This lets
-`bazel build //...` cover the whole test universe without forcing every
-otherwise-incompatible target to be individually invoked.
+Build the wrapper itself (e.g. `bazel build //tests/bram_splitter:all_bram_2025_1`)
+and every target in `targets` is built under the transitioned config —
+including ones that are `target_compatible_with` incompatible at the
+default platform or tagged `manual` so they don't show up under
+`//...` on their own. This lets `bazel build //...` cover the whole
+test universe without forcing every otherwise-incompatible target to
+be individually invoked.
 
 Toolchain resolution is platform-driven: every `toolchain()` in
 `//tests/toolchains` is gated on `exec_compatible_with` against the
-`//vivado/constraints/version:{ver}` constraint, so flipping the platform flips
-the toolchain.
+`//vivado/constraints/version:{ver}` constraint, so flipping the
+platform flips the toolchain.
 """
 
 # buildifier: disable=bzl-visibility

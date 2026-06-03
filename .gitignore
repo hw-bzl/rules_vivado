@@ -11,6 +11,8 @@ bazel-*
 MODULE.bazel.lock
 user.bazelrc
 
+/examples/user.bazelrc
+
 # Distribution / packaging
 .Python
 build/

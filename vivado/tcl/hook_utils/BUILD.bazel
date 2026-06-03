@@ -1,0 +1,16 @@
+"""Small utility package for rules_vivado hook authors — `require_env`."""
+
+load("@rules_tcl//tcl:defs.bzl", "tcl_library")
+
+package(
+    default_applicable_licenses = ["//:package_license"],
+    default_visibility = ["//visibility:public"],
+)
+
+tcl_library(
+    name = "hook_utils",
+    srcs = [
+        "hook_utils.tcl",
+        "pkgIndex.tcl",
+    ],
+)

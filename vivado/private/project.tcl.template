@@ -1,0 +1,231 @@
+# Vivado project spec. Emitted by `vivado_project`; sourced from
+# `vivado_synthesis`'s action or by a GUI launcher (`vivado -source
+# <this-script>`). Runs `create_project` + source ingest + constraints +
+# hooks, and stops there.
+#
+# It deliberately does NOT run `generate_target` or synth. The right
+# `generate_target` intent depends on the consumer (`{synthesis
+# implementation}` for `vivado_synthesis`, `simulation` for
+# `export_simulation`), so each consumer issues its own after this
+# script returns — then resumes with `synth_design` / `launch_runs` /
+# `export_simulation`.
+#
+# Two variables are runtime-configurable so the same script can drive:
+#   - `vivado_synthesis` in project mode (default; managed synth runs)
+#   - `vivado_synthesis` in in-memory mode (no on-disk project)
+#   - a GUI launcher pointing PROJECT_DIR at a user-chosen work dir
+#
+# Precedence for both: pre-set Tcl variable > env var > default. Set by
+# the caller BEFORE `source`ing this script.
+#
+#   PROJECT_MODE  ∈ {project, in_memory}. Env: VIVADO_PROJECT_MODE.
+#                 Default: `project`.
+#   PROJECT_DIR   Directory to hold the on-disk project (project mode)
+#                 or the sibling `imported_bds/` / `imported_xcis/`
+#                 trees. Env: VIVADO_PROJECT_DIR. Default: `.` (CWD).
+
+if {![info exists PROJECT_MODE]} {
+    if {[info exists ::env(VIVADO_PROJECT_MODE)]} {
+        set PROJECT_MODE $::env(VIVADO_PROJECT_MODE)
+    } else {
+        set PROJECT_MODE "project"
+    }
+}
+if {![info exists PROJECT_DIR]} {
+    if {[info exists ::env(VIVADO_PROJECT_DIR)]} {
+        set PROJECT_DIR $::env(VIVADO_PROJECT_DIR)
+    } else {
+        set PROJECT_DIR "."
+    }
+}
+
+set PART_NUMBER {{PART_NUMBER}}
+set MODULE_TOP  {{MODULE_TOP}}
+
+# HDL_SOURCES: {kind path library standard}, kind ∈ {verilog,
+# systemverilog, vhdl, import}; library/standard only meaningful for vhdl.
+set HDL_SOURCES {{HDL_SOURCES}}
+# SRC_DIRS: TreeArtifact directories (e.g. `vivado_xci` categorized outputs).
+# Vivado auto-classifies files inside by extension via `add_files`.
+set SRC_DIRS    {{SRC_DIRS}}
+set XDC_FILES   {{XDC_FILES}}
+# PROJECT_DATA_FILES: constraint / setup files listed directly on
+# `vivado_project.data`. Loaded in EXACT list order — the escape hatch
+# for files whose relative ordering matters (a `set_clock_groups.xdc`
+# that calls `get_clocks` needs the earlier `create_clock.xdc` to have
+# already run; the HDL dep graph can't naturally express that). Read
+# AFTER `$XDC_FILES` (per-library `.data`, order-independent
+# foundations) so project-scope constraints layer on top. `.xdc`/`.sdc`
+# entries → `read_xdc`, `.tcl` entries → `source`.
+set PROJECT_DATA_FILES {{PROJECT_DATA_FILES}}
+set TCL_FILES   {{TCL_FILES}}
+
+# IP_CONFIGURED_INSTANCES: {module_top repo xci_relpath} for pre-configured
+# `.xci` sources. IP_INSTANCES: {name vendor library version module_name}
+# for fresh `create_ip` calls.
+set IP_REPOS                {{IP_REPOS}}
+set IP_CONFIGURED_INSTANCES {{IP_CONFIGURED_INSTANCES}}
+set IP_INSTANCES            {{IP_INSTANCES}}
+
+# BLOCK_DESIGNS: {module_top bd_dir}.
+set BLOCK_DESIGNS {{BLOCK_DESIGNS}}
+
+# CONTRIBUTED_PROJECT_HOOKS: hooks contributed by `block_designs` /
+# `ip_blocks` targets via their `project_hooks` attrs. Fires right after
+# `create_project` + `source_mgmt_mode`, BEFORE the project's own
+# `pre_hooks_early` — so leaf targets set defaults (board_part,
+# msg_config, TCL procs) and the project author gets last-write-wins on
+# top via `pre_hooks_early`. Ordered by BD/IP dep-order, then by each
+# target's own `project_hooks` list order.
+set CONTRIBUTED_PROJECT_HOOKS {{CONTRIBUTED_PROJECT_HOOKS}}
+# PRE_HOOKS_EARLY fires right after `create_project` + `source_mgmt_mode`,
+# BEFORE any `add_files`. Home for TCL that sets project-scope properties
+# (`board_part`) or defines TCL procs consumed by BD `.tcl` sources loaded
+# during `add_files` (e.g. `amba::add_associated_busif`, `noc::*`).
+set PRE_HOOKS_EARLY {{PRE_HOOKS_EARLY}}
+# PRE_HOOKS fires post-`add_files`, before this script returns control
+# to its caller. Home for TCL that needs sources loaded but must run
+# before the caller's own flavor-specific setup (synth vs. simulation
+# `generate_target`, `verilog_define`, etc.). Consumers (`vivado_synthesis`,
+# `vivado_xsim_test`) run their own `pre_hooks` on the fully-elaborated
+# design further downstream.
+set PRE_HOOKS {{PRE_HOOKS}}
+
+# In `project` mode Vivado's named project lives one level BELOW
+# PROJECT_DIR (`$PROJECT_DIR/project`), so `imported_bds` and
+# `imported_xcis` can sit as siblings of `project/` — both still inside
+# PROJECT_DIR for TreeArtifact membership, but outside Vivado's project
+# directory. Nesting sub-designs INSIDE the project dir trips Vivado's
+# `[filemgmt 20-1381]` overlap check for BDs whose internal layout
+# mirrors the project (notably Versal CIPS-based BDs).
+switch -- $PROJECT_MODE {
+    "project" {
+        create_project project_1 [file join $PROJECT_DIR project] -part $PART_NUMBER
+    }
+    "in_memory" {
+        create_project -in_memory -part $PART_NUMBER
+        set_property design_mode RTL [current_fileset]
+    }
+    default {
+        error "project.tcl: unknown PROJECT_MODE '$PROJECT_MODE' (expected project or in_memory)"
+    }
+}
+# Hierarchical block designs and multi-config IP wrappers can fail with
+# the default `DisplayOnly` mode where Vivado expects the file-add order
+# to be correct. `All` matches the project-wizard default.
+set_property source_mgmt_mode All [current_project]
+
+# CONTRIBUTED_PROJECT_HOOKS: fires first so leaf BDs/IPs can set project
+# defaults (board_part, msg_config, TCL procs) their sources need to
+# elaborate correctly. PRE_HOOKS_EARLY below overrides on collision.
+foreach hook $CONTRIBUTED_PROJECT_HOOKS { source $hook }
+
+# PRE_HOOKS_EARLY: fires after `create_project` + `source_mgmt_mode`,
+# before any `add_files`. Sets project properties (`board_part`,
+# `set_msg_config`) and defines TCL procs that later-loaded BD scripts
+# need in scope. Empty for callers that don't specify — no-op.
+foreach hook $PRE_HOOKS_EARLY { source $hook }
+
+foreach entry $HDL_SOURCES {
+    lassign $entry kind path library standard
+    switch -- $kind {
+        verilog       { read_verilog -library $library $path }
+        systemverilog { read_verilog -library $library -sv $path }
+        vhdl {
+            switch -- $standard {
+                2008    { read_vhdl -vhdl2008 -library $library $path }
+                2019    { read_vhdl -vhdl2019 -library $library $path }
+                default { read_vhdl           -library $library $path }
+            }
+        }
+        import        { import_files $path }
+    }
+}
+
+foreach _src_dir $SRC_DIRS {
+    add_files -fileset sources_1 $_src_dir
+}
+
+if {[llength $IP_REPOS] > 0} {
+    set_property ip_repo_paths $IP_REPOS [current_project]
+    update_ip_catalog
+}
+
+# Copy each repo into a writable location (Bazel inputs are read-only
+# sandbox mounts; Vivado needs to mutate IP runs).
+#
+# In `project` mode the copy lives INSIDE $PROJECT_DIR (the rule's
+# declared TreeArtifact) so it travels with the .xpr under the same
+# artifact; without that, RBE consumers download the .xpr but not the
+# imports, and the references dangle. It lives as a SIBLING of the
+# `project/` subdir (not inside it) to avoid Vivado's project-vs-
+# sub-design overlap check ([filemgmt 20-1381]). In `in_memory` mode
+# there's no project subdir, so imports land as siblings under
+# PROJECT_DIR too.
+foreach ci $IP_CONFIGURED_INSTANCES {
+    lassign $ci ci_module_top ci_repo ci_xci_relpath
+    set _xci_root [expr {$PROJECT_MODE eq "project" ? "imported_xcis" : "in_memory_imported_xcis"}]
+    set _xci_import_dir [file join $PROJECT_DIR $_xci_root $ci_module_top]
+    file mkdir $_xci_import_dir
+    set _items [glob -nocomplain -directory $ci_repo *]
+    if {[llength $_items] > 0} {
+        file copy -force {*}$_items $_xci_import_dir/
+    }
+    exec chmod -R u+rwX $_xci_import_dir
+    set _xci_path [file join $_xci_import_dir $ci_xci_relpath]
+    # Use `add_files` (not `read_ip`) in both modes so Vivado's project-wide
+    # source tracking pulls in the IP's generated sub-IP outputs. `read_ip`
+    # in in_memory mode dropped sub-IP visibility and caused
+    # `[Synth 8-439] module '<bd>_<sub_ip>_0' not found`.
+    add_files -fileset sources_1 $_xci_path
+}
+
+foreach inst $IP_INSTANCES {
+    lassign $inst inst_name inst_vendor inst_library inst_version inst_module_name
+    create_ip -name $inst_name -vendor $inst_vendor -library $inst_library \
+        -version $inst_version -module_name $inst_module_name
+}
+
+# Each BD is copied into a writable location (Vivado mutates during
+# `generate_target`). Same `add_files` rationale as configured XCIs
+# above: `read_bd` in in_memory mode lost nested sub-IP tracking and left
+# `synth_design` unable to find the sub-IP modules. Nested under
+# PROJECT_DIR for TreeArtifact membership; sibling of the `project/`
+# subdir in project mode to avoid Vivado's overlap check.
+foreach bd $BLOCK_DESIGNS {
+    lassign $bd bd_module_top bd_dir
+    set _bd_root [expr {$PROJECT_MODE eq "project" ? "imported_bds" : "in_memory_imported_bds"}]
+    set _bd_import_dir [file join $PROJECT_DIR $_bd_root $bd_module_top]
+    file mkdir $_bd_import_dir
+    set _items [glob -nocomplain -directory $bd_dir *]
+    if {[llength $_items] > 0} {
+        file copy -force {*}$_items $_bd_import_dir/
+    }
+    exec chmod -R u+rwX $_bd_import_dir
+    set _bd_path [file join $_bd_import_dir ${bd_module_top}.bd]
+    add_files -fileset sources_1 $_bd_path
+}
+
+foreach f $TCL_FILES { source $f }
+foreach f $XDC_FILES { read_xdc $f }
+# `.xdc`/`.sdc` → `read_xdc`; `.tcl` → `source`. Extension dispatch
+# preserves the caller's exact list order in a single loop.
+foreach f $PROJECT_DATA_FILES {
+    switch -- [file extension $f] {
+        .xdc - .sdc { read_xdc $f }
+        .tcl        { source $f }
+        default {
+            error "project.tcl: vivado_project.data entry '$f' has unsupported extension; expected .xdc/.sdc/.tcl"
+        }
+    }
+}
+
+set_property top $MODULE_TOP [current_fileset]
+
+# PRE_HOOKS: fires post-`add_files`, before returning to caller. Runs
+# against a project whose sources are fully loaded — hooks that call
+# `get_files -of [get_ips]` (e.g. `fixup_constraints.tcl`) belong here.
+# For post-`generate_target` hooks, use the consumer's own `pre_hooks`
+# (vivado_synthesis.pre_hooks, vivado_xsim_test.pre_hooks) — those fire
+# on the fully-elaborated design.
+foreach hook $PRE_HOOKS { source $hook }

@@ -31,19 +31,13 @@ without the license server, so be deliberate here.
 
 To run multiple Vivado versions side-by-side, gate each
 `vivado_toolchain` with one of the per-version `constraint_value`s in
-[`//vivado/constraints/BUILD.bazel`](https://github.com/hw-bzl/rules_vivado/blob/main/vivado/constraints/BUILD.bazel).
+[`//vivado/constraints/version`](https://github.com/hw-bzl/rules_vivado/blob/main/vivado/constraints/version/BUILD.bazel).
 Each constraint corresponds to one entry in `VIVADO_VERSIONS` (defined
 in
 [`//vivado/private:versions.bzl`](https://github.com/hw-bzl/rules_vivado/blob/main/vivado/private/versions.bzl)).
 The [`vivado_toolchain`](./vivado_toolchain.md) docstring has the
 full multi-version walkthrough — `platform(...)` setup,
 `register_execution_platforms`, and the `--platforms` switch.
-
-For per-target switching without a global flag, use a wrapper rule
-with `cfg = transition(...)`; see
-[`tests/transition.bzl`](https://github.com/hw-bzl/rules_vivado/blob/main/tests/transition.bzl)
-for a `with_vivado_version` wrapper that takes a list of targets and
-pins the version for the whole group.
 
 Constraints are the only mechanism — there is no parallel build-setting
 / flag-driven path. This keeps per-version metadata (constraints,

@@ -1,0 +1,53 @@
+load("@rules_verilog//verilog:defs.bzl", "verilog_library")
+load(
+    "//vivado:defs.bzl",
+    "vivado_interface_definition",
+    "vivado_project",
+    "vivado_xsim_test",
+)
+
+# End-to-end: a custom SystemVerilog interface, its IP-XACT
+# generation via `vivado_interface_definition`, a module that
+# instantiates the interface, and an xsim testbench that exercises it.
+
+vivado_interface_definition(
+    name = "stream_fifo_interface",
+    src = "stream_fifo_if.sv",
+    interface_name = "stream_fifo_if",
+    library = "interfaces",
+    vendor = "test_vendor",
+    version = "1.0",
+)
+
+verilog_library(
+    name = "stream_fifo_if",
+    srcs = ["stream_fifo_if.sv"],
+    data = [":stream_fifo_interface"],
+)
+
+verilog_library(
+    name = "stream_fifo",
+    srcs = ["stream_fifo.sv"],
+    deps = [":stream_fifo_if"],
+)
+
+verilog_library(
+    name = "stream_fifo_tb",
+    srcs = ["stream_fifo_tb.sv"],
+    deps = [":stream_fifo"],
+)
+
+vivado_project(
+    name = "stream_fifo_project",
+    module = ":stream_fifo_tb",
+    module_top = "stream_fifo_tb",
+    part_number = "xc7a35ticsg324-1L",
+    tags = ["requires-vivado"],
+)
+
+vivado_xsim_test(
+    name = "stream_fifo_xsim_test",
+    module_top = "stream_fifo_tb",
+    project = ":stream_fifo_project",
+    tags = ["requires-vivado"],
+)

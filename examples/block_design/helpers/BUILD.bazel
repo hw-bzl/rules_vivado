@@ -1,0 +1,14 @@
+load("@rules_tcl//tcl:tcl_library.bzl", "tcl_library")
+
+# Shared block-design procs, packaged so consumers reach them with
+# `package require` instead of hand-listing the file. The `pkgIndex.tcl`
+# in `srcs` is what puts this directory on a dependent `tcl_binary`'s
+# `auto_path`; without it the library only ships as runfiles.
+tcl_library(
+    name = "bd_helpers",
+    srcs = [
+        "bd_helpers.tcl",
+        "pkgIndex.tcl",
+    ],
+    visibility = ["//block_design:__pkg__"],
+)

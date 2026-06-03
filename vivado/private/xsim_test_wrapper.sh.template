@@ -1,0 +1,233 @@
+#!/usr/bin/env bash
+# Wrapper generated from this template at rule-analysis time by
+# `_xsim_test_impl` in //vivado:simulation.bzl. All template variables are
+# pre-quoted (bash single-quoted) by the rule impl — do not re-quote here.
+set -uo pipefail
+
+TEST_NAME={{TEST_NAME}}
+EXPORT_DIR_REL={{EXPORT_DIR_SHORT_PATH}}
+XILINX_ENV_REL={{XILINX_ENV_SHORT_PATH}}
+VIVADO_REL={{VIVADO_SHORT_PATH}}
+EXECROOT_MARKER={{EXECROOT_MARKER}}
+ERROR_PATTERN={{ERROR_PATTERN}}
+COMPLETION_PATTERN={{COMPLETION_PATTERN}}
+
+{{ENV_EXPORTS}}
+
+if [[ -n "${RUNFILES_DIR:-}" ]]; then
+    RF="$RUNFILES_DIR"
+elif [[ -d "$0.runfiles" ]]; then
+    RF="$0.runfiles"
+else
+    RF="$(dirname "$(readlink -f "$0")").runfiles"
+fi
+
+# Bzlmod repos land under `_main`; legacy workspaces under $TEST_WORKSPACE.
+if [[ -d "$RF/_main" ]]; then
+    WS_ROOT="$RF/_main"
+elif [[ -n "${TEST_WORKSPACE:-}" && -d "$RF/$TEST_WORKSPACE" ]]; then
+    WS_ROOT="$RF/$TEST_WORKSPACE"
+else
+    WS_ROOT="$(find "$RF" -maxdepth 1 -mindepth 1 -type d ! -name 'MANIFEST' | head -1)"
+fi
+
+EXPORT_DIR="$WS_ROOT/$EXPORT_DIR_REL"
+if [[ ! -d "$EXPORT_DIR/xsim" ]]; then
+    echo "ERROR: xsim export not found at $EXPORT_DIR/xsim" >&2
+    ls -la "$EXPORT_DIR/" >&2 || true
+    exit 2
+fi
+
+if [[ -n "$XILINX_ENV_REL" && -f "$WS_ROOT/$XILINX_ENV_REL" ]]; then
+    # shellcheck disable=SC1090
+    source "$WS_ROOT/$XILINX_ENV_REL"
+fi
+
+# The exported driver calls `xvlog` / `xelab` / `xsim` by bare name. Bazel
+# gives tests a minimal PATH, so those normally arrive via the toolchain's
+# `xilinx_env` (sourced above) or an `env = {"PATH": ...}` entry (exported
+# above). When neither put them in scope, ask the toolchain's `vivado` shim
+# — the one thing every toolchain has — where its install lives: boot it
+# once on a probe script that prints `$XILINX_VIVADO/bin`. Slow (one
+# Vivado start) but only on this fallback path.
+if ! command -v xvlog >/dev/null 2>&1; then
+    VIVADO_BIN=""
+    if [[ -n "$VIVADO_REL" && -x "$WS_ROOT/$VIVADO_REL" ]]; then
+        PROBE_DIR="${TEST_TMPDIR:-/tmp}/xsim_probe.$$"
+        if mkdir -p "$PROBE_DIR"; then
+            cat > "$PROBE_DIR/probe.tcl" <<'TCLEOF'
+if {[info exists ::env(XILINX_VIVADO)]} {
+    puts "RULES_VIVADO_BIN=[file join $::env(XILINX_VIVADO) bin]"
+} else {
+    # `.../bin/unwrapped/<arch>/vivado` -> `.../bin`
+    puts "RULES_VIVADO_BIN=[file dirname [file dirname [file dirname [info nameofexecutable]]]]"
+}
+TCLEOF
+            VIVADO_BIN="$( (cd "$PROBE_DIR" && "$WS_ROOT/$VIVADO_REL" -mode batch -nolog -nojournal -notrace -source probe.tcl 2>/dev/null) | sed -n 's/^RULES_VIVADO_BIN=//p' | tail -1)"
+            rm -rf "$PROBE_DIR"
+        fi
+    fi
+    if [[ -n "$VIVADO_BIN" && -d "$VIVADO_BIN" ]]; then
+        export PATH="$VIVADO_BIN:$PATH"
+    fi
+fi
+if ! command -v xvlog >/dev/null 2>&1; then
+    echo "ERROR: xvlog not found on PATH. Point the vivado_toolchain's \`xilinx_env\` at a script that prepends the Vivado bin dir to PATH (or set PATH in its \`env\`)." >&2
+    exit 2
+fi
+
+# xsim mutates cwd (writes xsim.dir/, xsim.log, .wdb, .covdb); runfiles are
+# read-only so stage a writable copy. Explicit rc checks — `set -e` isn't
+# safe globally because later `grep -q` calls legitimately return non-zero.
+WORK_DIR="${TEST_TMPDIR:-/tmp}/xsim_work.$$"
+if ! mkdir -p "$WORK_DIR"; then
+    echo "ERROR: could not create work dir $WORK_DIR" >&2
+    exit 2
+fi
+if ! cp -rL "$EXPORT_DIR/xsim/." "$WORK_DIR/"; then
+    echo "ERROR: could not stage xsim export from $EXPORT_DIR/xsim to $WORK_DIR" >&2
+    exit 2
+fi
+if ! chmod -R u+w "$WORK_DIR"; then
+    echo "ERROR: could not chmod $WORK_DIR writable" >&2
+    exit 2
+fi
+
+# Every file in the export was path-sanitized by the build action: absolute
+# sandbox paths now read `<execroot>/...` (see `vivado_export_simulation`).
+# Re-point them at this test's runfiles before running anything. The
+# sandbox layouts map onto runfiles as:
+#   <execroot>/bazel-out/<cfg>/bin/external/<repo>/<p>  ->  $RF/<repo>/<p>
+#   <execroot>/bazel-out/<cfg>/bin/<p>                  ->  $WS_ROOT/<p>
+#   <execroot>/external/<repo>/<p>                      ->  $RF/<repo>/<p>
+#   <execroot>/<p>                                      ->  $WS_ROOT/<p>
+# Done before the runfiles symlinks below land in WORK_DIR so the sweep
+# only touches the export's own files. `-I` skips binaries.
+sed_escape() { printf '%s' "$1" | sed -e 's/[\\&|]/\\&/g'; }
+MARKER_ESC="$(sed_escape "$EXECROOT_MARKER")"
+WS_ROOT_ESC="$(sed_escape "$WS_ROOT")"
+RF_ESC="$(sed_escape "$RF")"
+grep -rlIF -- "$EXECROOT_MARKER" "$WORK_DIR" 2>/dev/null | while IFS= read -r f; do
+    sed -i \
+        -e "s|${MARKER_ESC}bazel-out/[^/]*/bin/external/|${RF_ESC}/|g" \
+        -e "s|${MARKER_ESC}bazel-out/[^/]*/bin/|${WS_ROOT_ESC}/|g" \
+        -e "s|${MARKER_ESC}external/|${RF_ESC}/|g" \
+        -e "s|${MARKER_ESC}|${WS_ROOT_ESC}/|g" \
+        "$f"
+done
+
+# Layer workspace-shaped runfiles on top of the export tree so
+# `$readmemh "tests/foo/data.mem"` (workspace-relative) resolves from cwd.
+# `export_simulation` doesn't propagate `.mem` init files or other `data =`
+# payloads. Skip entries that collide with an export-tree name — the export
+# always wins so its sim scaffolding stays intact.
+for entry in "$WS_ROOT"/*; do
+    base="$(basename "$entry")"
+    if [[ ! -e "$WORK_DIR/$base" ]]; then
+        ln -s "$entry" "$WORK_DIR/$base"
+    fi
+done
+
+if ! cd "$WORK_DIR"; then
+    echo "ERROR: could not cd into $WORK_DIR" >&2
+    exit 2
+fi
+
+SIM_LOG="$WORK_DIR/sim.log"
+
+# `export_simulation -simulator xsim` writes `simulate.sh` as top-level
+# driver; fall through to any other `.sh` as insurance against a filename
+# change.
+DRIVER=""
+for candidate in simulate.sh *.sh; do
+    if [[ -f "$candidate" && -x "$candidate" ]]; then
+        DRIVER="$candidate"
+        break
+    fi
+done
+if [[ -z "$DRIVER" ]]; then
+    echo "ERROR: no executable driver script in $WORK_DIR" >&2
+    ls -la "$WORK_DIR/" >&2
+    exit 2
+fi
+
+# Only inject xsim's `-cov` flag when Bazel has set $COVERAGE_OUTPUT_FILE
+# (`bazel coverage` sets this per test). Vivado's exported driver hardcodes
+# its xelab args, so sed the flag in before running. Ungated, every
+# `bazel test` would pay the coverage-collection overhead.
+# `.covdb -> lcov` conversion is a followup — for now emit an empty lcov stub
+# so Bazel's coverage collector doesn't complain, and copy the raw `.covdb`
+# to $TEST_UNDECLARED_OUTPUTS_DIR for out-of-band inspection.
+if [[ -n "${COVERAGE_OUTPUT_FILE:-}" ]]; then
+    sed -i 's| xelab | xelab -cov all |g' "$DRIVER"
+fi
+
+"./$DRIVER" > "$SIM_LOG" 2>&1
+DRIVER_EXIT=$?
+
+if [[ -n "${COVERAGE_OUTPUT_FILE:-}" ]]; then
+    : > "$COVERAGE_OUTPUT_FILE"
+fi
+
+UNDECLARED="${TEST_UNDECLARED_OUTPUTS_DIR:-}"
+if [[ -n "$UNDECLARED" ]]; then
+    mkdir -p "$UNDECLARED"
+    cp "$SIM_LOG" "$UNDECLARED/sim.log"
+    for tool_log in xsim.log xelab.log xvlog.log xvhdl.log compile.log elaborate.log; do
+        [[ -f "$WORK_DIR/$tool_log" ]] && cp "$WORK_DIR/$tool_log" "$UNDECLARED/"
+    done
+    find "$WORK_DIR" -maxdepth 3 -name '*.wdb' -exec cp {} "$UNDECLARED/" \; 2>/dev/null || true
+    # `.covdb` is a directory tree (xelab writes it with `-cov`); preserve
+    # the whole thing so future lcov conversion has raw input.
+    find "$WORK_DIR" -maxdepth 3 -name '*.covdb' -type d -exec cp -r {} "$UNDECLARED/" \; 2>/dev/null || true
+fi
+
+# Log-scan safety net: xsim reports `$error` but does NOT exit nonzero, and
+# testbenches can hang past `$finish`.
+STATUS="PASSED"
+FAILURE_MSG=""
+EXIT_CODE=0
+if [[ $DRIVER_EXIT -ne 0 ]]; then
+    STATUS="FAILED"
+    FAILURE_MSG="xsim driver exited with code $DRIVER_EXIT"
+    EXIT_CODE=$DRIVER_EXIT
+elif [[ -n "$ERROR_PATTERN" ]] && grep -qE "$ERROR_PATTERN" "$SIM_LOG"; then
+    STATUS="FAILED"
+    FAILURE_MSG="error pattern matched in simulation log"
+    EXIT_CODE=1
+elif [[ -n "$COMPLETION_PATTERN" ]] && ! grep -qE "$COMPLETION_PATTERN" "$SIM_LOG"; then
+    STATUS="FAILED"
+    FAILURE_MSG="simulation did not complete (no match for /$COMPLETION_PATTERN/)"
+    EXIT_CODE=1
+fi
+
+XML_FILE="${XML_OUTPUT_FILE:-}"
+if [[ -n "$XML_FILE" ]]; then
+    xml_escape() { sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g'; }
+    if [[ "$STATUS" == "FAILED" ]]; then
+        FAILURE_ATTR="$(printf '%s' "$FAILURE_MSG" | xml_escape)"
+        FAILURE_BODY="$(tail -80 "$SIM_LOG" | xml_escape)"
+        FAILURES=1
+        FAILURE_XML="<failure message=\"$FAILURE_ATTR\">$FAILURE_BODY</failure>"
+    else
+        FAILURES=0
+        FAILURE_XML=""
+    fi
+    cat > "$XML_FILE" <<XMLEOF
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="$TEST_NAME" tests="1" failures="$FAILURES">
+    <testcase name="$TEST_NAME" classname="xsim">$FAILURE_XML</testcase>
+  </testsuite>
+</testsuites>
+XMLEOF
+fi
+
+if [[ "$STATUS" == "FAILED" ]]; then
+    echo "=== xsim_test FAILED: $FAILURE_MSG ==="
+    tail -80 "$SIM_LOG"
+    exit "$EXIT_CODE"
+fi
+
+echo "=== xsim_test PASSED ==="
+exit 0

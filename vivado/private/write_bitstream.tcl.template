@@ -1,14 +1,29 @@
-set_param general.maxThreads {{THREADS}}
-open_checkpoint {{CHECKPOINT_IN}}
+set THREADS       {{THREADS}}
+set CHECKPOINT_IN {{CHECKPOINT_IN}}
+set BITSTREAM     {{BITSTREAM}}
+# `{*}`-expanded AFTER `-force` and BEFORE the rule's positional output;
+# `validate_args` rejects `-force` and `-file` so callers can't override
+# rule-declared overwrite policy or output path.
+set WRITE_ARGS    {{WRITE_ARGS}}
+# TIMING_CHECK ∈ {error, warn, none} — the rule's `timing_check` attr; see
+# `::rules_vivado::timing_gate` for the policy.
+set TIMING_CHECK  {{TIMING_CHECK}}
 
-set WNS [get_property SLACK [get_timing_paths -max_paths 1 -nworst 1 -setup]]
-puts "Post Route WNS = $WNS"
+set PRE_HOOKS  {{PRE_HOOKS}}
+set POST_HOOKS {{POST_HOOKS}}
 
-if {$WNS >= 0} {
-    write_bitstream -force {{BITSTREAM}}
-    if {{{WRITE_XSA}}} {
-        write_hw_platform -fixed -include_bit -force -file {{XSA_PATH}}
-    }
-} else {
-    puts "Failed to make timing, refusing to make bitstream"
-}
+# Shared procs (`::rules_vivado::*`), staged by `run_tcl_template`.
+source {{RULES_VIVADO_TCL}}
+
+set_param general.maxThreads $THREADS
+open_checkpoint $CHECKPOINT_IN
+
+foreach hook $PRE_HOOKS { source $hook }
+
+# Post-route timing gate (shared helper in `rules_vivado.tcl`): probes
+# both setup and hold slack and applies the rule's `timing_check` policy.
+::rules_vivado::timing_gate $TIMING_CHECK "bitstream"
+
+write_bitstream -force {*}$WRITE_ARGS $BITSTREAM
+
+foreach hook $POST_HOOKS { source $hook }

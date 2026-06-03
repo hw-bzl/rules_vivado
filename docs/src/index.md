@@ -12,12 +12,14 @@ and test rules. HDL sources flow in through
 [`rules_vhdl`](https://registry.bazel.build/modules/rules_vhdl)
 (`VhdlInfo`); the same `*_library` targets can be reused for simulation
 and synthesis. The build phases are each their own rule
-([`vivado_synthesize`](./vivado_synthesis.md),
+([`vivado_project`](./vivado_project.md) +
+[`vivado_synthesis`](./vivado_synthesis.md),
 [`vivado_placement`](./vivado_implementation.md),
 [`vivado_routing`](./vivado_implementation.md),
-[`vivado_write_bitstream`](./vivado_bitstream.md), …) so checkpoints are
-cached between phases, or you can chain the whole flow with the
-`vivado_flow` macro.
+[`vivado_bitstream`](./vivado_bitstream.md), …) so each phase's
+checkpoint and reports are addressable as their own targets — build
+`:my_synth` when you only want the synth `.dcp`, or `:my_bitstream`
+for the end-to-end result.
 
 The Xilinx install itself is resolved via a registered
 [`vivado_toolchain`](./toolchains.md) — there is no per-target install
@@ -26,13 +28,14 @@ path to configure once a toolchain is in place.
 ## Quick start
 
 The walkthrough below takes a Verilog top module from source to
-bitstream with the `vivado_flow` macro.
+bitstream by composing the per-phase rules directly — that's the
+shape the ruleset is designed around.
 
 ### `MODULE.bazel`
 
 ```python
-bazel_dep(name = "rules_verilog", version = "1.1.1")
-bazel_dep(name = "rules_vhdl", version = "0.1.1")
+bazel_dep(name = "rules_verilog", version = "1.4.3")
+bazel_dep(name = "rules_vhdl", version = "0.4.1")
 bazel_dep(name = "rules_vivado", version = "{version}")
 
 register_toolchains("//tools/vivado:vivado_toolchain")
@@ -94,7 +97,16 @@ endmodule
 
 ```python
 load("@rules_verilog//verilog:defs.bzl", "verilog_library")
-load("@rules_vivado//vivado:defs.bzl", "vivado_flow")
+load(
+    "@rules_vivado//vivado:defs.bzl",
+    "vivado_place_optimize",
+    "vivado_placement",
+    "vivado_project",
+    "vivado_routing",
+    "vivado_synthesis",
+    "vivado_synthesis_optimize",
+    "vivado_bitstream",
+)
 
 verilog_library(
     name = "hello",
@@ -102,11 +114,41 @@ verilog_library(
     data = ["hello.xdc"],
 )
 
-vivado_flow(
-    name = "hello_bitstream",
+vivado_project(
+    name = "hello_project",
     module = ":hello",
     module_top = "hello",
-    part_number = "xczu28dr-ffvg1517-2-e",
+    part_number = "xc7a35ticsg324-1L",
+)
+
+vivado_synthesis(
+    name = "hello_synth",
+    project = ":hello_project",
+)
+
+vivado_synthesis_optimize(
+    name = "hello_synth_opt",
+    checkpoint = ":hello_synth",
+)
+
+vivado_placement(
+    name = "hello_placement",
+    checkpoint = ":hello_synth_opt",
+)
+
+vivado_place_optimize(
+    name = "hello_place_opt",
+    checkpoint = ":hello_placement",
+)
+
+vivado_routing(
+    name = "hello_route",
+    checkpoint = ":hello_place_opt",
+)
+
+vivado_bitstream(
+    name = "hello_bitstream",
+    checkpoint = ":hello_route",
 )
 ```
 
@@ -115,24 +157,26 @@ vivado_flow(
 ```text
 $ bazel build //hello:hello_bitstream
 $ ls bazel-bin/hello/
-hello_bitstream.bit  hello_bitstream_route.dcp  ...
+hello_bitstream.bit  hello_route.dcp  ...
 ```
 
-`vivado_flow` is a convenience macro — it expands to the per-phase
-rules below so each checkpoint is cached on its own:
+Every intermediate target is buildable in isolation:
 
-- `hello_bitstream_synth` — synthesis (`.dcp`)
-- `hello_bitstream_synth_opt` — post-synthesis optimization
-- `hello_bitstream_placement` — placement
-- `hello_bitstream_place_opt` — post-placement optimization
-- `hello_bitstream_route` — routing
-- `hello_bitstream` — final `.bit`
+- `:hello_synth` — synthesis (`.dcp`)
+- `:hello_synth_opt` — post-synthesis optimization
+- `:hello_placement` — placement
+- `:hello_place_opt` — post-placement optimization
+- `:hello_route` — routing
+- `:hello_bitstream` — final `.bit`
 
-Build any one of them directly to stop the flow early or to inspect
-intermediate reports.
+Build one directly to stop the flow early or to inspect the reports
+that phase writes.
 
 ## Going further
 
 - [Toolchains](./toolchains.md) — author a `vivado_toolchain`, register
   multiple versions, gate them with constraints and platforms.
+- [Rule flow](./flow.md) — diagrams of how the rules and providers
+  connect, from HDL libraries through IP composition to bitstream and
+  simulation.
 - [Rules](./rules.md) — every public rule, indexed by build phase.

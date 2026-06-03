@@ -1,0 +1,54 @@
+set THREADS       {{THREADS}}
+set CHECKPOINT_IN {{CHECKPOINT_IN}}
+# `NO_PDI` selects between the default in-Vivado wrap and an external
+# wrap:
+#   0: Vivado runs its internal bootgen to write the final `.pdi`
+#      directly.
+#   1: Vivado runs with `-no_pdi`, emitting only the intermediate
+#      `.rcdo` / `.rnpi` files (base name =
+#      `$env(VIVADO_PDI_INTERMEDIATE_BASE)`) plus a `gen_files/`
+#      directory in cwd. A `POST_HOOKS` entry MUST produce the final PDI
+#      at `$env(VIVADO_PDI_OUT)` — Bazel fails the action if it's missing.
+set NO_PDI        {{NO_PDI}}
+# `{*}`-expanded AFTER `-force` and BEFORE the rule's positional output;
+# `validate_args` rejects `-force`, `-file`, and `-no_pdi` so callers
+# can't override rule-declared overwrite policy, output path, or the
+# dedicated `no_pdi` attr.
+set WRITE_ARGS    {{WRITE_ARGS}}
+# TIMING_CHECK ∈ {error, warn, none} — the rule's `timing_check` attr; see
+# `::rules_vivado::timing_gate` for the policy.
+set TIMING_CHECK  {{TIMING_CHECK}}
+
+set PRE_HOOKS  {{PRE_HOOKS}}
+set POST_HOOKS {{POST_HOOKS}}
+
+# Local vars come from Bazel substitutions — authoritative and always
+# present. Publish them as env vars too so POST_HOOKS consume them
+# through the standard `$env(...)` channel (the hook can't see the
+# template's Tcl scope, and Vivado's `source` can't pass args). The
+# `VIVADO_` prefix scopes them to this ruleset so downstream hooks don't
+# collide with unrelated environment.
+set PDI_OUT                              {{DEVICE_IMAGE}}
+set PDI_INTERMEDIATE_BASE                [file rootname $PDI_OUT]
+set ::env(VIVADO_PDI_OUT)                $PDI_OUT
+set ::env(VIVADO_PDI_INTERMEDIATE_BASE)  $PDI_INTERMEDIATE_BASE
+
+# Shared procs (`::rules_vivado::*`), staged by `run_tcl_template`.
+source {{RULES_VIVADO_TCL}}
+
+set_param general.maxThreads $THREADS
+open_checkpoint $CHECKPOINT_IN
+
+foreach hook $PRE_HOOKS { source $hook }
+
+# Post-route timing gate (shared helper in `rules_vivado.tcl`): probes
+# both setup and hold slack and applies the rule's `timing_check` policy.
+::rules_vivado::timing_gate $TIMING_CHECK "device image"
+
+if {$NO_PDI} {
+    write_device_image -force -no_pdi {*}$WRITE_ARGS $::env(VIVADO_PDI_INTERMEDIATE_BASE)
+} else {
+    write_device_image -force {*}$WRITE_ARGS $::env(VIVADO_PDI_OUT)
+}
+
+foreach hook $POST_HOOKS { source $hook }

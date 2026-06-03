@@ -1,5 +1,6 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@rules_python//python:py_binary.bzl", "py_binary")
+load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
 
 package(
     default_applicable_licenses = ["//:package_license"],
@@ -10,27 +11,48 @@ bzl_library(
     srcs = glob(["*.bzl"]),
     visibility = ["//vivado:__pkg__"],
     deps = [
+        "@bazel_skylib//rules:common_settings",
+        "@rules_tcl//tcl:bzl_lib",
         "@rules_verilog//verilog:defs_bzl",
         "@rules_vhdl//vhdl:defs_bzl",
     ],
 )
 
 exports_files([
-    "create_project.tcl.template",
-    "synth_optimize.tcl.template",
-    "placement.tcl.template",
-    "place_optimize.tcl.template",
-    "route.tcl.template",
-    "write_bitstream.tcl.template",
-    "xsim_test.tcl.template",
-    "create_ip_block.tcl.template",
-    "create_interface_ip.tcl.template",
-    "bus_definition.xml.template",
     "abstraction_definition.xml.template",
+    "bus_definition.xml.template",
+    "compile_simlib.tcl.template",
+    "create_bd.tcl.template",
+    "create_interface_ip.tcl.template",
+    "create_ip_block.tcl.template",
+    "create_xci.tcl.template",
+    "export_simulation.tcl.template",
     "interface_setup.tcl.template",
+    "place_optimize.tcl.template",
+    "placement.tcl.template",
+    "project.tcl.template",
+    "project_export.tcl.template",
+    "route.tcl.template",
+    "rules_vivado.tcl",
+    "synth_optimize.tcl.template",
+    "synthesis.tcl.template",
     "vivado.sh",
+    "vivado_hook_wrapper.vhook.tcl.tpl",
+    "write_bitstream.tcl.template",
+    "write_debug_probes.tcl.template",
+    "write_device_image.tcl.template",
+    "write_hw_platform.tcl.template",
     "xilinx_keyfile.txt",
+    "xsim_test_wrapper.sh.template",
 ])
+
+# Default `vivado_toolchain(sanitizer = ...)`. Public so toolchain authors
+# can wrap or replace it; any executable with the same argv contract works.
+sh_binary(
+    name = "sanitize_paths",
+    srcs = ["sanitize_paths.sh"],
+    visibility = ["//visibility:public"],
+)
 
 py_binary(
     name = "parse_sv_interface",
@@ -41,5 +63,17 @@ py_binary(
 py_binary(
     name = "generate_interface_xml",
     srcs = ["generate_interface_xml.py"],
+    visibility = ["//visibility:public"],
+)
+
+sh_binary(
+    name = "sort_xci_outputs",
+    srcs = ["sort_xci_outputs.sh"],
+    visibility = ["//visibility:public"],
+)
+
+sh_binary(
+    name = "tclsh_stub",
+    srcs = ["tclsh_stub.sh"],
     visibility = ["//visibility:public"],
 )

@@ -1,0 +1,36 @@
+load("//vivado:defs.bzl", "vivado_export_simulation", "vivado_project")
+
+# `vivado_export_simulation` matrix — exercise the `simulator` choice
+# list on all four supported targets against the shared nested-IP
+# from //tests/weights_replay/and_save.
+#
+# Part matches the upstream IP's build (Ultra96-V2, Zynq UltraScale+
+# MPSoC). Mismatched parts across IP-build vs export cause spurious
+# IP-refresh in the export action.
+
+vivado_project(
+    name = "weights_replay_and_save_export_project",
+    ip_blocks = ["//tests/weights_replay/and_save:weights_replay_and_save_ip"],
+    # No `module` — this project is IP-only. The design lives entirely
+    # inside `weights_replay_and_save_ip`; there's no top-level HDL
+    # library to load.
+    module_top = "weights_replay_and_save",
+    part_number = "xczu3eg-sbva484-1-i",
+    tags = ["requires-vivado"],
+)
+
+[
+    vivado_export_simulation(
+        name = "weights_replay_and_save_export_{}".format(_sim),
+        module_top = "weights_replay_and_save",
+        project = ":weights_replay_and_save_export_project",
+        simulator = _sim,
+        tags = ["requires-vivado"],
+    )
+    for _sim in [
+        "questa",
+        "riviera",
+        "xcelium",
+        "xsim",
+    ]
+]

@@ -1,0 +1,10 @@
+load("@rules_tcl//tcl:defs.bzl", "tcl_library")
+
+tcl_library(
+    name = "vivado_hook_helpers",
+    srcs = [
+        "pkgIndex.tcl",
+        "util.tcl",
+    ],
+    visibility = ["//tests:__subpackages__"],
+)

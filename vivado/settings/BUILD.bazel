@@ -1,0 +1,8 @@
+load(":settings.bzl", "incompatible_eager_tcl_hook_load")
+
+package(
+    default_applicable_licenses = ["//:package_license"],
+    default_visibility = ["//visibility:public"],
+)
+
+incompatible_eager_tcl_hook_load()

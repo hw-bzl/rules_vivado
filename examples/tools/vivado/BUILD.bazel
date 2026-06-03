@@ -7,6 +7,9 @@ vivado_toolchain(
         "XILINXD_LICENSE_FILE": "2100@license.example.com",
     },
     vivado = "vivado.sh",
+    # Sourced by the vivado_xsim_test wrapper at test runtime so
+    # `xvlog` / `xelab` / `xsim` resolve inside the docker sandbox.
+    xilinx_env = "xilinx_env.sh",
 )
 
 toolchain(

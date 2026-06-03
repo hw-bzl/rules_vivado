@@ -15,7 +15,7 @@ jobs:
 
       - name: Install buildifier
         run: |
-          wget -q https://github.com/bazelbuild/buildtools/releases/download/v7.3.1/buildifier-linux-amd64
+          wget -q https://github.com/bazelbuild/buildtools/releases/download/v8.5.1/buildifier-linux-amd64
           chmod +x buildifier-linux-amd64
           sudo mv buildifier-linux-amd64 /usr/local/bin/buildifier
 

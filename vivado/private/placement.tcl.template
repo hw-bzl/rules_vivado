@@ -1,7 +1,36 @@
-set_param general.maxThreads {{THREADS}}
-open_checkpoint {{CHECKPOINT_IN}}
+set THREADS             {{THREADS}}
+set CHECKPOINT_IN       {{CHECKPOINT_IN}}
+set CHECKPOINT_OUT      {{CHECKPOINT_OUT}}
+set PLACE_ARGS          {{PLACE_ARGS}}
+set IMPL_XDC_BUNDLE     "{{IMPL_XDC_BUNDLE}}"
 
-place_design -directive {{PLACEMENT_DIRECTIVE}}
-report_timing_summary -file {{TIMING_REPORT}}
-report_utilization -file {{UTIL_REPORT}}
-write_checkpoint -force {{CHECKPOINT_OUT}}
+set PRE_HOOKS  {{PRE_HOOKS}}
+set POST_HOOKS {{POST_HOOKS}}
+
+set REPORT_COMMANDS    {{REPORT_COMMANDS}}
+set REQUESTED_REPORTS  {{REQUESTED_REPORTS}}
+
+# Shared procs (`::rules_vivado::*`), staged by `run_tcl_template`.
+source {{RULES_VIVADO_TCL}}
+
+set_param general.maxThreads $THREADS
+open_checkpoint $CHECKPOINT_IN
+
+# Re-apply implementation-only XDCs when `vivado_synthesis_optimize` was
+# skipped (constraints would otherwise not be in this checkpoint). See
+# `synth_optimize.tcl.template` for rationale.
+if {$IMPL_XDC_BUNDLE ne "" && [file exists $IMPL_XDC_BUNDLE] && [file size $IMPL_XDC_BUNDLE] > 0} {
+    read_xdc $IMPL_XDC_BUNDLE
+}
+
+foreach hook $PRE_HOOKS { source $hook }
+
+place_design {*}$PLACE_ARGS
+
+foreach hook $POST_HOOKS { source $hook }
+
+# Reports run via the shared helper (see `rules_vivado.tcl`): each is
+# wrapped in `catch` so one failure doesn't abort the action.
+::rules_vivado::run_reports $REPORT_COMMANDS $REQUESTED_REPORTS
+
+write_checkpoint -force $CHECKPOINT_OUT

@@ -1,11 +1,18 @@
-"""Known Vivado versions and the default for `--//vivado/settings:version`.
+"""Known Vivado versions.
 
-`VIVADO_VERSIONS` enumerates the version strings the
-`--//vivado/settings:version` flag will accept. Add patch releases (e.g.
-"2024.1.1") to this list as you need them.
+`VIVADO_VERSIONS` is the single source of truth for the version strings
+this ruleset knows about. `//vivado/constraints/version:BUILD.bazel`
+generates one `constraint_value` per entry under the `:version`
+`constraint_setting`; toolchain resolution picks a Vivado install by
+matching a platform's `constraint_values` against a `toolchain()`
+registration's `exec_compatible_with`. There is no version *flag* —
+selection happens through platforms, e.g.
+`--platforms=//tests/toolchains:vivado_2025_1_platform` or a
+`cfg = transition(...)` wrapper (see `//tests:transition.bzl`).
+
+Add patch releases (e.g. "2024.1.1") to this list as you need them; the
+constraint values follow automatically.
 """
-
-DEFAULT_VIVADO_VERSION = "2024.1"
 
 VIVADO_VERSIONS = [
     # 2012 (initial release, quarterly cadence)

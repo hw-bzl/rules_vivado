@@ -1,0 +1,29 @@
+load("@rules_tcl//tcl:defs.bzl", "tcl_library")
+
+# Fixture for `eager_tcl_hook_load_test` / `lazy_tcl_hook_load_test`.
+#
+# Two levels on purpose. A hook attr pointing at `:leaf` sees only
+# `leaf.tcl` in `DefaultInfo.files`; `base.tcl` is reachable solely
+# through `TclInfo.transitive_srcs`. That gap is exactly what
+# `incompatible_eager_tcl_hook_load` closes, so a one-level fixture
+# would pass under both settings and prove nothing.
+tcl_library(
+    name = "leaf",
+    srcs = [
+        "leaf.tcl",
+        "pkgIndex.tcl",
+    ],
+    visibility = ["//tests/analysis:__pkg__"],
+    deps = ["//tests/analysis/tcl/base"],
+)
+
+# EAGER-TCL-HOOK-LOAD: delete with the flag.
+# Fixture for `external_tcl_hook_load_test`. The dep is a Tcl package
+# owned by another repo, so eager loading must leave it to `package
+# require` no matter how deep the hook's closure goes.
+tcl_library(
+    name = "external_dep",
+    srcs = ["external_dep.tcl"],
+    visibility = ["//tests/analysis:__pkg__"],
+    deps = ["@rules_tcl//tcl/runfiles"],
+)

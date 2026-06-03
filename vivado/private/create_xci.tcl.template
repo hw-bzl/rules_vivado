@@ -1,0 +1,71 @@
+set IP_DIR      {{IP_DIR}}
+set PART_NUMBER {{PART_NUMBER}}
+set MODULE_TOP  {{MODULE_TOP}}
+set IP_SCRIPT   {{IP_SCRIPT}}
+
+set IP_REPOS                {{IP_REPOS}}
+set IP_CONFIGURED_INSTANCES {{IP_CONFIGURED_INSTANCES}}
+set IP_INSTANCES            {{IP_INSTANCES}}
+
+set PRE_HOOKS  {{PRE_HOOKS}}
+set POST_HOOKS {{POST_HOOKS}}
+
+# Scratch project in the action's cwd, NOT inside $IP_DIR: the TreeArtifact
+# is what consumers copy, sort, and sanitize, and Vivado's `.cache` /
+# `.runs` / `.xpr` are of no use to them. Same shape as
+# `create_ip_block.tcl.template`.
+create_project xci_project ./project -part $PART_NUMBER
+
+if {[llength $IP_REPOS] > 0} {
+    set_property ip_repo_paths $IP_REPOS [current_project]
+    update_ip_catalog
+}
+
+foreach ci $IP_CONFIGURED_INSTANCES {
+    lassign $ci ci_module_top ci_repo ci_xci_relpath
+    set _xci_import_dir [file join $IP_DIR ${ci_module_top}_imported_xci]
+    file mkdir $_xci_import_dir
+    foreach _item [glob -nocomplain -directory $ci_repo *] {
+        file copy -force $_item $_xci_import_dir/
+    }
+    exec chmod -R u+rwX $_xci_import_dir
+    add_files -fileset sources_1 [file join $_xci_import_dir $ci_xci_relpath]
+}
+
+foreach inst $IP_INSTANCES {
+    lassign $inst inst_name inst_vendor inst_library inst_version inst_module_name
+    create_ip -name $inst_name -vendor $inst_vendor -library $inst_library \
+        -version $inst_version -module_name $inst_module_name
+}
+
+foreach hook $PRE_HOOKS { source $hook }
+
+# The user's IP TCL — must call:
+#   create_ip -name <ip> -vendor <v> -library <l> -version <ver> \
+#       -module_name $MODULE_TOP -dir . -force
+source $IP_SCRIPT
+
+set _xci_files [get_files -quiet "${MODULE_TOP}.xci"]
+if {[llength $_xci_files] == 0} {
+    error "vivado_xci: no `.xci` named `${MODULE_TOP}.xci` was created by $IP_SCRIPT. Ensure the TCL calls `create_ip ... -module_name $MODULE_TOP`."
+}
+set _xci_file [lindex $_xci_files 0]
+set _xci_src_dir [file dirname $_xci_file]
+
+# `synth_checkpoint_mode NONE` MUST be set BEFORE `generate_target` so the
+# captured IP tree carries the inline-synth source set, not the default
+# Singular (OOC) checkpoint. Setting it later at the synth step is too late
+# — `generate_target` is a no-op when the IP has already been generated,
+# and consumer instantiations passing distinct generic combinations then
+# surface as `__parameterized<N>` black boxes at top synth.
+set_property synth_checkpoint_mode NONE $_xci_file
+
+generate_target all $_xci_file
+
+foreach _item [glob -nocomplain -directory $_xci_src_dir *] {
+    file copy -force $_item $IP_DIR/
+}
+
+foreach hook $POST_HOOKS { source $hook }
+
+close_project

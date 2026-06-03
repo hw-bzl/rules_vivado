@@ -9,5 +9,12 @@ multilingual = false
 src = "src"
 title = "rules_vivado"
 
+# Renders ```mermaid fences. The binary and `mermaid.min.js` come from the
+# `mermaid` module extension (`extensions.bzl`) via `//docs:book`;
+# `mermaid-init.js` is checked in next to this file.
+[preprocessor.mermaid]
+command = "mdbook-mermaid"
+
 [output.html]
 git-repository-url = "https://github.com/hw-bzl/rules_vivado"
+additional-js = ["mermaid.min.js", "mermaid-init.js"]

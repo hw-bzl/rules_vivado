@@ -1,0 +1,102 @@
+load("@rules_verilog//verilog:defs.bzl", "verilog_library")
+load(
+    "//vivado:defs.bzl",
+    "vivado_bitstream",
+    "vivado_ip_core",
+    "vivado_place_optimize",
+    "vivado_placement",
+    "vivado_project",
+    "vivado_routing",
+    "vivado_synthesis",
+    "vivado_synthesis_optimize",
+)
+
+# `vivado_ip_core` on a `verilog_library` with `encrypt = True` +
+# per-phase synth pipeline consuming the packaged IP. Targets the
+# Digilent PYNQ-Z2 (Zynq-7000 PS7 — the Zynq-7000 code path is
+# distinct from ZCU/UltraScale+ Zynq PSU). Reuses the `test.mem`
+# write_file staged by //tests/johnson_counter to avoid duplication.
+
+verilog_library(
+    name = "weights_replay",
+    srcs = ["weights_replay.sv"],
+    data = ["//tests/johnson_counter:test.mem"],
+    visibility = ["//tests:__subpackages__"],
+)
+
+verilog_library(
+    name = "weights_replay_top",
+    srcs = ["weights_replay_top.sv"],
+    data = ["io_constraints.xdc"],
+)
+
+_PYNQ_Z2 = "xc7z020clg400-1"
+
+vivado_ip_core(
+    # Set `encrypt = True` locally when you have an IEEE 1735 v2
+    # encryption license — the container's stock Vivado install
+    # doesn't ship one (`[Vivado 12-3330] encrypt 1735: not
+    # licensed`), so the checked-in setting keeps CI green.
+    name = "weights_replay_ip",
+    encrypt = False,
+    ip_library = "test",
+    ip_vendor = "test_vendor",
+    ip_version = "0.1",
+    module = ":weights_replay",
+    module_top = "weights_replay",
+    part_number = _PYNQ_Z2,
+    # Packaged on Zynq-7000 but consumed downstream by
+    # //tests/weights_replay/and_save on Zynq UltraScale+; advertise
+    # both families so `weights_replay_and_save_ip` finds this VLNV.
+    supported_families = [
+        "zynq",
+        "zynquplus",
+    ],
+    tags = ["requires-vivado"],
+    visibility = ["//tests:__subpackages__"],
+)
+
+vivado_project(
+    name = "weights_replay_project",
+    ip_blocks = [":weights_replay_ip"],
+    module = ":weights_replay_top",
+    module_top = "weights_replay_top",
+    part_number = _PYNQ_Z2,
+    tags = ["requires-vivado"],
+)
+
+vivado_synthesis(
+    name = "weights_replay_synth",
+    project = ":weights_replay_project",
+    tags = ["requires-vivado"],
+)
+
+vivado_synthesis_optimize(
+    name = "weights_replay_synth_opt",
+    checkpoint = ":weights_replay_synth",
+    tags = ["requires-vivado"],
+)
+
+vivado_placement(
+    name = "weights_replay_placement",
+    checkpoint = ":weights_replay_synth_opt",
+    tags = ["requires-vivado"],
+)
+
+vivado_place_optimize(
+    name = "weights_replay_place_opt",
+    checkpoint = ":weights_replay_placement",
+    tags = ["requires-vivado"],
+)
+
+vivado_routing(
+    name = "weights_replay_route",
+    checkpoint = ":weights_replay_place_opt",
+    tags = ["requires-vivado"],
+)
+
+vivado_bitstream(
+    name = "weights_replay_bitstream",
+    checkpoint = ":weights_replay_route",
+    tags = ["requires-vivado"],
+)

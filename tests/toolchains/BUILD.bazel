@@ -6,36 +6,51 @@ package(
 )
 
 # One vivado_toolchain instance per Vivado shim. Each `toolchain()`
-# wrapper gates on a `//vivado/constraints/version:{ver}` constraint_value via
-# `exec_compatible_with`, so toolchain resolution picks the right Vivado from
-# the active exec platform. Set `--platforms` (or use the `with_vivado_version`
-# transition in `//tests:transition.bzl`) to switch versions.
+# wrapper gates on a `//vivado/constraints/version:{ver}` constraint_value
+# via `exec_compatible_with`, so toolchain resolution picks the right
+# Vivado from the active exec platform. Set `--platforms` (or use the
+# `with_vivado_version` transition in `//tests:transition.bzl`) to switch
+# versions.
 
 vivado_toolchain(
-    name = "vivado_2024_1",
+    name = "vivado_2024_2",
     env = {
+        # Bazel strips the action env down to what's listed here.
+        # `HOME` is required for Vivado to write its per-user cache;
+        # `XILINXD_LICENSE_FILE` deliberately isn't set here — flow
+        # it in via `--action_env=XILINXD_LICENSE_FILE=<host>:<port>`
+        # in your local user.bazelrc so the checked-in test harness
+        # doesn't publish a specific license-server address.
         "HOME": "/tmp",
-        "XILINXD_LICENSE_FILE": "2100@localhost",
     },
-    version = "2024.01",
-    vivado = "vivado_2024_1.sh",
+    version = "2024.02",
+    vivado = "vivado_2024_2.sh",
+    # Sourced by the vivado_xsim_test wrapper at test runtime so `xvlog` etc.
+    # resolve inside the docker sandbox (which strips container PATH).
+    xilinx_env = "xilinx_env_2024_2.sh",
 )
 
 toolchain(
-    name = "vivado_toolchain_2024_1",
-    exec_compatible_with = ["//vivado/constraints/version:2024.1"],
-    toolchain = ":vivado_2024_1",
+    name = "vivado_toolchain_2024_2",
+    exec_compatible_with = ["//vivado/constraints/version:2024.2"],
+    toolchain = ":vivado_2024_2",
     toolchain_type = TOOLCHAIN_TYPE,
 )
 
 vivado_toolchain(
     name = "vivado_2025_1",
     env = {
+        # Bazel strips the action env down to what's listed here.
+        # `HOME` is required for Vivado to write its per-user cache;
+        # `XILINXD_LICENSE_FILE` deliberately isn't set here — flow
+        # it in via `--action_env=XILINXD_LICENSE_FILE=<host>:<port>`
+        # in your local user.bazelrc so the checked-in test harness
+        # doesn't publish a specific license-server address.
         "HOME": "/tmp",
-        "XILINXD_LICENSE_FILE": "2100@localhost",
     },
     version = "2025.01",
     vivado = "vivado_2025_1.sh",
+    xilinx_env = "xilinx_env_2025_1.sh",
 )
 
 toolchain(
@@ -45,14 +60,14 @@ toolchain(
     toolchain_type = TOOLCHAIN_TYPE,
 )
 
-# Per-version execution platforms. Inheriting from @platforms//host carries
-# OS/CPU constraints so non-vivado actions can still pick a sensible platform.
-# Registered as exec platforms in MODULE.bazel so toolchain resolution finds
-# the matching one for each vivado_* action automatically.
+# Per-version execution platforms. Inheriting from @platforms//host
+# carries OS/CPU constraints so non-vivado actions can still pick a
+# sensible platform. Registered in MODULE.bazel so toolchain resolution
+# finds the matching one for each vivado_* action automatically.
 
 platform(
-    name = "vivado_2024_1_platform",
-    constraint_values = ["//vivado/constraints/version:2024.1"],
+    name = "vivado_2024_2_platform",
+    constraint_values = ["//vivado/constraints/version:2024.2"],
     parents = ["@platforms//host"],
 )
 
