@@ -42,16 +42,6 @@ A `vivado_toolchain` is **mandatory** — every `vivado_*` rule resolves
 the Xilinx install through it. See [Toolchains](./toolchains.md) for
 how to author one.
 
-### `tools/vivado/xilinx_env.sh`
-
-```bash
-#!/usr/bin/env bash
-set -e
-export HOME=/tmp
-source /opt/Xilinx/Vivado/2024.2/settings64.sh
-export XILINXD_LICENSE_FILE=2100@license.example.com
-```
-
 ### `tools/vivado/BUILD.bazel`
 
 ```python
@@ -59,7 +49,12 @@ load("@rules_vivado//vivado:toolchain.bzl", "vivado_toolchain")
 
 vivado_toolchain(
     name = "vivado_local",
-    xilinx_env = "xilinx_env.sh",
+    env = {
+        "XILINX_VIVADO": "/opt/Xilinx/Vivado/2024.2",
+        "PATH": "/opt/Xilinx/Vivado/2024.2/bin:/usr/bin:/bin",
+        "XILINXD_LICENSE_FILE": "2100@license.example.com",
+        "HOME": "/tmp",
+    },
 )
 
 toolchain(
@@ -68,6 +63,9 @@ toolchain(
     toolchain_type = "@rules_vivado//vivado:toolchain_type",
 )
 ```
+
+See [Toolchains](./toolchains.md) for license-server, multi-version,
+and shell-hook setup.
 
 ### `hello/hello.sv`
 

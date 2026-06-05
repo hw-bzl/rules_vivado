@@ -1,33 +1,26 @@
-"""Toolchain for the Xilinx Vivado tool.
+"""# Toolchain for the Xilinx Vivado tool.
 
 Defines `VivadoToolchainInfo` and the `vivado_toolchain` rule. Users register a
 `vivado_toolchain` instance via `register_toolchains(...)` against the
-`//vivado:toolchain_type` toolchain type so that every `vivado_*` rule
-automatically resolves the Xilinx environment script instead of taking it as a
-per-target attribute.
+`//vivado:toolchain_type` toolchain type so every `vivado_*` rule automatically
+resolves the Xilinx environment.
 
 # Quickstart
 
-1. Write a shell script that sources your Vivado install and (optionally) sets
-   the license server. By convention this lives next to your toolchain BUILD
-   file, e.g. `tools/vivado/xilinx_env.sh`:
-
-   ```bash
-   #!/usr/bin/env bash
-   set -e
-   export HOME=/tmp
-   source /opt/Xilinx/Vivado/2024.2/settings64.sh
-   export XILINXD_LICENSE_FILE=2100@license.example.com
-   ```
-
-2. Declare a `vivado_toolchain` and a `toolchain()` wrapper in BUILD:
+1. Declare a `vivado_toolchain` and a `toolchain()` wrapper in BUILD. Put your
+   Vivado install path and license server in `env`:
 
    ```starlark
    load("@rules_vivado//vivado:toolchain.bzl", "vivado_toolchain")
 
    vivado_toolchain(
        name = "vivado_local",
-       xilinx_env = "xilinx_env.sh",
+       env = {
+           "XILINX_VIVADO": "/opt/Xilinx/Vivado/2024.2",
+           "PATH": "/opt/Xilinx/Vivado/2024.2/bin:/usr/bin:/bin",
+           "XILINXD_LICENSE_FILE": "2100@license.example.com",
+           "HOME": "/tmp",
+       },
    )
 
    toolchain(
@@ -37,14 +30,17 @@ per-target attribute.
    )
    ```
 
-3. Register it from MODULE.bazel:
+2. Register it from MODULE.bazel:
 
    ```starlark
    register_toolchains("//tools/vivado:vivado_toolchain")
    ```
 
-Every `vivado_*` rule will now resolve this toolchain automatically. Drop the
-deprecated per-rule `xilinx_env` attribute from your targets once registered.
+Every `vivado_*` rule resolves this toolchain automatically.
+
+`xilinx_env` is an optional escape hatch — a shell script sourced inside the
+action immediately before `vivado` runs — for shell-side env composition that
+`env` cannot express. Prefer `env` and reach for it only when needed.
 
 # Constraining toolchains
 
@@ -58,7 +54,10 @@ load("@rules_vivado//vivado:toolchain.bzl", "vivado_toolchain")
 
 vivado_toolchain(
     name = "vivado_2024_2",
-    xilinx_env = "xilinx_env_2024_2.sh",
+    env = {
+        "XILINX_VIVADO": "/opt/Xilinx/Vivado/2024.2",
+        "PATH": "/opt/Xilinx/Vivado/2024.2/bin:/usr/bin:/bin",
+    },
 )
 
 toolchain(
@@ -98,10 +97,14 @@ TOOLCHAIN_TYPE = str(Label("//vivado:toolchain_type"))
 VivadoToolchainInfo = provider(
     doc = "Toolchain info for the Xilinx Vivado tool.",
     fields = {
-        "env": "dict[str, str]: environment variables to be used in Vivado actions.",
+        "env": "dict[str, str]: environment variables passed to every Vivado action.",
         "requires_network": "bool: whether Vivado actions need network access (typically for a network license server).",
         "version": "str: The version of Vivado associated with this toolchain.",
-        "xilinx_env": "File: shell script sourced before invoking Vivado that sets up PATH and license server.",
+        "xilinx_env": (
+            "File or None: optional shell script sourced inside the action " +
+            "shell immediately before `vivado` runs. Escape hatch for " +
+            "shell-side env composition `env` cannot express."
+        ),
     },
 )
 
@@ -118,8 +121,7 @@ def _vivado_toolchain_impl(ctx):
     ]
 
 vivado_toolchain = rule(
-    doc = """Declares a Vivado toolchain backed by a shell script that sources \
-the Xilinx environment.
+    doc = """Declares a Vivado toolchain.
 
 Wrap with `toolchain(...)` and register via `register_toolchains(...)` in
 MODULE.bazel so every `vivado_*` rule resolves it automatically. Multiple
@@ -131,7 +133,7 @@ walkthroughs.
     implementation = _vivado_toolchain_impl,
     attrs = {
         "env": attr.string_dict(
-            doc = "Environment variables to be used in Vivado actions.",
+            doc = "Environment variables passed to every Vivado action.",
             default = {},
         ),
         "requires_network": attr.bool(
@@ -148,8 +150,10 @@ walkthroughs.
             doc = "The version of Vivado associated with this toolchain.",
         ),
         "xilinx_env": attr.label(
-            doc = "Shell script to source the Vivado environment and point at the license server.",
-            mandatory = True,
+            doc = ("Optional escape hatch — a shell script sourced inside " +
+                   "the action shell immediately before `vivado` runs, for " +
+                   "shell-side env composition `env` cannot express. Prefer " +
+                   "`env`."),
             allow_single_file = [".sh"],
         ),
     },

@@ -1,12 +1,11 @@
-"""Synthesis-phase rules: vivado_synthesize and vivado_synthesis_optimize."""
+"""# Synthesis-phase rules: vivado_synthesize and vivado_synthesis_optimize."""
 
 load("@rules_verilog//verilog:defs.bzl", "VerilogInfo")
 load("@rules_vhdl//vhdl:defs.bzl", "VhdlInfo")
 load("//vivado:providers.bzl", "VivadoIPBlockInfo", "VivadoSynthCheckpointInfo")
 load(
     "//vivado/private:common.bzl",
-    "OPTIONAL_TOOLCHAIN",
-    "XILINX_ENV_ATTR",
+    "TOOLCHAIN_TYPE",
     "create_and_synth",
     "run_tcl_template",
 )
@@ -33,7 +32,7 @@ def _vivado_synthesize_impl(ctx):
 vivado_synthesize = rule(
     doc = "Create a Vivado project and run synthesis on it.",
     implementation = _vivado_synthesize_impl,
-    toolchains = OPTIONAL_TOOLCHAIN,
+    toolchains = [TOOLCHAIN_TYPE],
     attrs = {
         "create_project_tcl_template": attr.label(
             doc = "The create project tcl template",
@@ -66,7 +65,7 @@ vivado_synthesize = rule(
             doc = "The synthesis strategy to use.",
             default = "Vivado Synthesis Defaults",
         ),
-    } | XILINX_ENV_ATTR,
+    },
     provides = [
         DefaultInfo,
         VivadoSynthCheckpointInfo,
@@ -120,7 +119,7 @@ def _vivado_synthesis_optimize_impl(ctx):
 vivado_synthesis_optimize = rule(
     doc = "Run post-synthesis optimization on a synthesis checkpoint.",
     implementation = _vivado_synthesis_optimize_impl,
-    toolchains = OPTIONAL_TOOLCHAIN,
+    toolchains = [TOOLCHAIN_TYPE],
     attrs = {
         "checkpoint": attr.label(
             doc = "Synthesis checkpoint.",
@@ -144,7 +143,7 @@ vivado_synthesis_optimize = rule(
             doc = "Create debug probes.",
             default = False,
         ),
-    } | XILINX_ENV_ATTR,
+    },
     provides = [
         DefaultInfo,
         VivadoSynthCheckpointInfo,

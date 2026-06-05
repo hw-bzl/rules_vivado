@@ -8,82 +8,17 @@ load(":resource_set.bzl", "get_resource_set")
 
 TOOLCHAIN_TYPE = _TOOLCHAIN_TYPE
 
-# Spread into a rule's `toolchains = [...]` list. The toolchain is optional
-# today so callers can keep using the deprecated per-rule `xilinx_env` attribute
-# without having to register a `vivado_toolchain`.
-#
-# TODO: when `xilinx_env` is fully deprecated and removed, drop this and switch
-# every rule to `toolchains = [TOOLCHAIN_TYPE]` so toolchain registration
-# becomes mandatory (and the action-level `toolchain = TOOLCHAIN_TYPE` hint
-# below stops needing a None branch).
-OPTIONAL_TOOLCHAIN = [config_common.toolchain_type(TOOLCHAIN_TYPE, mandatory = False)]
-
-# Spread into a rule's `attrs` dict to give that rule an optional, deprecated
-# `xilinx_env` attribute. Kept for callers that haven't migrated to registering
-# a `vivado_toolchain` yet. `get_vivado_toolchain` honors it (and prints a warning).
-XILINX_ENV_ATTR = {
-    "xilinx_env": attr.label(
-        doc = ("DEPRECATED: prefer registering a `vivado_toolchain` and " +
-               "letting toolchain resolution pick the env. If set, this " +
-               "overrides the toolchain-resolved env for this target only " +
-               "and emits a deprecation warning at analysis time. See " +
-               "`//vivado:toolchain.bzl` and the README for migration."),
-        allow_single_file = [".sh"],
-    ),
-}
-
 def get_vivado_toolchain(ctx):
     """Resolve the Vivado toolchain settings for an action.
 
-    Prefers an explicit `xilinx_env` rule attribute when set (with a one-time
-    deprecation warning per target), otherwise resolves from the registered
-    `//vivado:toolchain_type` toolchain.
-
-    The deprecated `xilinx_env` path conservatively reports
-    `requires_network = True` since it has no toolchain context to consult,
-    and `action_toolchain_type = None` so the action-level toolchain hint is
-    omitted (the rule's toolchain dep is optional today).
-
-    TODO: once `xilinx_env` is fully deprecated and removed, fail loudly here
-    if no toolchain is registered (instead of falling back) and always return
-    `action_toolchain_type = TOOLCHAIN_TYPE`.
-
     Args:
-        ctx: The rule context. May or may not have a `xilinx_env` attribute.
+        ctx: The rule context.
 
     Returns:
-        struct(xilinx_env: File, requires_network: bool, env: dict[str, str],
-               action_toolchain_type: Label | None).
+        VivadoToolchainInfo struct (xilinx_env: File, requires_network: bool,
+        env: dict[str, str]).
     """
-    xilinx_env_attr = getattr(ctx.file, "xilinx_env", None)
-    if xilinx_env_attr:
-        # buildifier: disable=print
-        print((
-            "WARNING: {label}: the `xilinx_env` attribute is deprecated. " +
-            "Register a `vivado_toolchain` in MODULE.bazel " +
-            "(`register_toolchains(\"//path/to:vivado_toolchain\")`) and drop " +
-            "this attribute. See `@rules_vivado//vivado:toolchain.bzl`."
-        ).format(label = ctx.label))
-        return struct(
-            xilinx_env = xilinx_env_attr,
-            requires_network = True,
-            env = {},
-            action_toolchain_type = None,
-        )
-    toolchain = ctx.toolchains[TOOLCHAIN_TYPE]
-    if toolchain == None:
-        fail(("{label}: no `xilinx_env` attribute set and no " +
-              "`//vivado:toolchain_type` toolchain registered. Either set " +
-              "`xilinx_env` on the target (deprecated) or register a " +
-              "`vivado_toolchain` in MODULE.bazel via `register_toolchains(...)`. " +
-              "See `@rules_vivado//vivado:toolchain.bzl`.").format(label = ctx.label))
-    info = toolchain.vivado_info
-    return struct(
-        xilinx_env = info.xilinx_env,
-        requires_network = info.requires_network,
-        env = info.env,
-        action_toolchain_type = TOOLCHAIN_TYPE,
-    )
+    return ctx.toolchains[TOOLCHAIN_TYPE].vivado_info
 
 def run_tcl_template(*, ctx, template, substitutions, input_files, output_files, mnemonic, jobs = 1, post_processing_command = ""):
     """Runs a tcl template in vivado.
@@ -114,13 +49,21 @@ def run_tcl_template(*, ctx, template, substitutions, input_files, output_files,
         substitutions = substitutions,
     )
 
-    vivado_command = "source " + env.xilinx_env.path + " && "
+    # `xilinx_env` is the toolchain's optional shell-side escape hatch.
+    # Only fires when set — static env flows through `ctx.actions.run_shell`
+    # via `env.env`.
+    vivado_command = ""
+    if env.xilinx_env:
+        vivado_command += "source " + env.xilinx_env.path + " && "
     vivado_command += "vivado -mode batch -source " + vivado_tcl.path
     vivado_command += " -log " + vivado_log.path
     vivado_command += " -journal " + vivado_journal.path + "; "
     vivado_command += post_processing_command
 
     outputs = output_files + [vivado_log, vivado_journal]
+    action_inputs = input_files + [vivado_tcl]
+    if env.xilinx_env:
+        action_inputs.append(env.xilinx_env)
 
     # Network access is opt-in via the toolchain's `requires_network` attribute
     # (true by default for floating/network license servers; false for
@@ -135,11 +78,11 @@ def run_tcl_template(*, ctx, template, substitutions, input_files, output_files,
 
     ctx.actions.run_shell(
         outputs = outputs,
-        inputs = input_files + [vivado_tcl, env.xilinx_env],
+        inputs = action_inputs,
         progress_message = "Running on vivado: {}".format(ctx.label.name),
         command = vivado_command,
         mnemonic = mnemonic,
-        toolchain = env.action_toolchain_type,
+        toolchain = TOOLCHAIN_TYPE,
         resource_set = get_resource_set(jobs),
         execution_requirements = execution_requirements,
         env = env.env,

@@ -1,4 +1,4 @@
-"""Public entrypoint for rules_vivado.
+"""# Public entrypoint for rules_vivado.
 
 Re-exports every rule and macro from the phase-grouped files under `//vivado`
 and the toolchain rule. Users who only need a subset of rules can load

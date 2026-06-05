@@ -1,10 +1,9 @@
-"""Bitstream-phase rule: vivado_write_bitstream."""
+"""# Bitstream-phase rule: vivado_write_bitstream."""
 
 load("//vivado:providers.bzl", "VivadoRoutingCheckpointInfo")
 load(
     "//vivado/private:common.bzl",
-    "OPTIONAL_TOOLCHAIN",
-    "XILINX_ENV_ATTR",
+    "TOOLCHAIN_TYPE",
     "run_tcl_template",
 )
 
@@ -46,7 +45,7 @@ def _vivado_write_bitstream_impl(ctx):
 vivado_write_bitstream = rule(
     doc = "Write a Vivado bitstream (.bit) from a routed checkpoint, optionally including a .xsa.",
     implementation = _vivado_write_bitstream_impl,
-    toolchains = OPTIONAL_TOOLCHAIN,
+    toolchains = [TOOLCHAIN_TYPE],
     attrs = {
         "checkpoint": attr.label(
             doc = "Routed checkpoint.",
@@ -66,7 +65,7 @@ vivado_write_bitstream = rule(
             default = Label("//vivado/private:write_bitstream.tcl.template"),
             allow_single_file = [".template"],
         ),
-    } | XILINX_ENV_ATTR,
+    },
     provides = [
         DefaultInfo,
     ],
