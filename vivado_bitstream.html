@@ -156,7 +156,7 @@
                 <div id="content" class="content">
                     <main>
                         <!-- Generated with Stardoc: http://skydoc.bazel.build -->
-<p>Bitstream-phase rule: vivado_write_bitstream.</p>
+<h1 id="bitstream-phase-rule-vivado_write_bitstream"><a class="header" href="#bitstream-phase-rule-vivado_write_bitstream">Bitstream-phase rule: vivado_write_bitstream.</a></h1>
 <h2 id="rules"><a class="header" href="#rules">Rules</a></h2>
 <ul>
 <li><a href="#vivado_write_bitstream">vivado_write_bitstream</a></li>
@@ -166,7 +166,7 @@
 <pre>
 load("@rules_vivado//vivado:bitstream.bzl", "vivado_write_bitstream")
 
-vivado_write_bitstream(<a href="#vivado_write_bitstream-name">name</a>, <a href="#vivado_write_bitstream-checkpoint">checkpoint</a>, <a href="#vivado_write_bitstream-threads">threads</a>, <a href="#vivado_write_bitstream-with_xsa">with_xsa</a>, <a href="#vivado_write_bitstream-write_bitstream_template">write_bitstream_template</a>, <a href="#vivado_write_bitstream-xilinx_env">xilinx_env</a>)
+vivado_write_bitstream(<a href="#vivado_write_bitstream-name">name</a>, <a href="#vivado_write_bitstream-checkpoint">checkpoint</a>, <a href="#vivado_write_bitstream-threads">threads</a>, <a href="#vivado_write_bitstream-with_xsa">with_xsa</a>, <a href="#vivado_write_bitstream-write_bitstream_template">write_bitstream_template</a>)
 </pre>
 <p>Write a Vivado bitstream (.bit) from a routed checkpoint, optionally including a .xsa.</p>
 <p><strong>ATTRIBUTES</strong></p>
@@ -176,7 +176,6 @@ vivado_write_bitstream(<a href="#vivado_write_bitstream-name">name</a>, <a href=
 <tr><td style="text-align: left"><a id="vivado_write_bitstream-threads"></a>threads</td><td style="text-align: left">Threads to pass to vivado which defines the amount of parallelism.</td><td style="text-align: left">Integer</td><td style="text-align: left">optional</td><td style="text-align: left"><code>8</code></td></tr>
 <tr><td style="text-align: left"><a id="vivado_write_bitstream-with_xsa"></a>with_xsa</td><td style="text-align: left">Generate xsa too</td><td style="text-align: left">Boolean</td><td style="text-align: left">optional</td><td style="text-align: left"><code>False</code></td></tr>
 <tr><td style="text-align: left"><a id="vivado_write_bitstream-write_bitstream_template"></a>write_bitstream_template</td><td style="text-align: left">The write bitstream tcl template</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:write_bitstream.tcl.template"</code></td></tr>
-<tr><td style="text-align: left"><a id="vivado_write_bitstream-xilinx_env"></a>xilinx_env</td><td style="text-align: left">DEPRECATED: prefer registering a <code>vivado_toolchain</code> and letting toolchain resolution pick the env. If set, this overrides the toolchain-resolved env for this target only and emits a deprecation warning at analysis time. See <code>//vivado:toolchain.bzl</code> and the README for migration.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>None</code></td></tr>
 </tbody></table>
 </div>
                     </main>

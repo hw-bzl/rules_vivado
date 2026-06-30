@@ -188,19 +188,21 @@ register_toolchains("//tools/vivado:vivado_toolchain")
 <p>A <code>vivado_toolchain</code> is <strong>mandatory</strong> — every <code>vivado_*</code> rule resolves
 the Xilinx install through it. See <a href="./toolchains.html">Toolchains</a> for
 how to author one.</p>
-<h3 id="toolsvivadoxilinx_envsh"><a class="header" href="#toolsvivadoxilinx_envsh"><code>tools/vivado/xilinx_env.sh</code></a></h3>
+<h3 id="toolsvivadovivadosh"><a class="header" href="#toolsvivadovivadosh"><code>tools/vivado/vivado.sh</code></a></h3>
 <pre><code class="language-bash">#!/usr/bin/env bash
-set -e
-export HOME=/tmp
-source /opt/Xilinx/Vivado/2024.2/settings64.sh
-export XILINXD_LICENSE_FILE=2100@license.example.com
+exec /opt/Xilinx/Vivado/2024.2/bin/vivado "$@"
 </code></pre>
+<p>Mark it executable: <code>chmod +x tools/vivado/vivado.sh</code>.</p>
 <h3 id="toolsvivadobuildbazel"><a class="header" href="#toolsvivadobuildbazel"><code>tools/vivado/BUILD.bazel</code></a></h3>
 <pre><code class="language-python">load("@rules_vivado//vivado:toolchain.bzl", "vivado_toolchain")
 
 vivado_toolchain(
     name = "vivado_local",
-    xilinx_env = "xilinx_env.sh",
+    vivado = "vivado.sh",
+    env = {
+        "XILINXD_LICENSE_FILE": "2100@license.example.com",
+        "HOME": "/tmp",
+    },
 )
 
 toolchain(
@@ -209,6 +211,8 @@ toolchain(
     toolchain_type = "@rules_vivado//vivado:toolchain_type",
 )
 </code></pre>
+<p>See <a href="./toolchains.html">Toolchains</a> for license-server and multi-version
+setup.</p>
 <h3 id="hellohellosv"><a class="header" href="#hellohellosv"><code>hello/hello.sv</code></a></h3>
 <pre><code class="language-systemverilog">module hello (
     input  wire clk,

@@ -156,7 +156,7 @@
                 <div id="content" class="content">
                     <main>
                         <!-- Generated with Stardoc: http://skydoc.bazel.build -->
-<p>vivado_create_project rule: build a Vivado project without synthesizing.</p>
+<h1 id="vivado_create_project-rule-build-a-vivado-project-without-synthesizing"><a class="header" href="#vivado_create_project-rule-build-a-vivado-project-without-synthesizing">vivado_create_project rule: build a Vivado project without synthesizing.</a></h1>
 <h2 id="rules"><a class="header" href="#rules">Rules</a></h2>
 <ul>
 <li><a href="#vivado_create_project">vivado_create_project</a></li>
@@ -167,7 +167,7 @@
 load("@rules_vivado//vivado:project.bzl", "vivado_create_project")
 
 vivado_create_project(<a href="#vivado_create_project-name">name</a>, <a href="#vivado_create_project-create_project_tcl_template">create_project_tcl_template</a>, <a href="#vivado_create_project-ip_blocks">ip_blocks</a>, <a href="#vivado_create_project-jobs">jobs</a>, <a href="#vivado_create_project-module">module</a>, <a href="#vivado_create_project-module_top">module_top</a>,
-                      <a href="#vivado_create_project-part_number">part_number</a>, <a href="#vivado_create_project-xilinx_env">xilinx_env</a>)
+                      <a href="#vivado_create_project-part_number">part_number</a>)
 </pre>
 <p>Create a Vivado project from a verilog_library without running synthesis.</p>
 <p><strong>ATTRIBUTES</strong></p>
@@ -179,7 +179,6 @@ vivado_create_project(<a href="#vivado_create_project-name">name</a>, <a href="#
 <tr><td style="text-align: left"><a id="vivado_create_project-module"></a>module</td><td style="text-align: left">The top level build.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
 <tr><td style="text-align: left"><a id="vivado_create_project-module_top"></a>module_top</td><td style="text-align: left">The name of the top level verilog module.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
 <tr><td style="text-align: left"><a id="vivado_create_project-part_number"></a>part_number</td><td style="text-align: left">The targeted xilinx part.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
-<tr><td style="text-align: left"><a id="vivado_create_project-xilinx_env"></a>xilinx_env</td><td style="text-align: left">DEPRECATED: prefer registering a <code>vivado_toolchain</code> and letting toolchain resolution pick the env. If set, this overrides the toolchain-resolved env for this target only and emits a deprecation warning at analysis time. See <code>//vivado:toolchain.bzl</code> and the README for migration.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>None</code></td></tr>
 </tbody></table>
 </div>
                     </main>

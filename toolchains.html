@@ -158,43 +158,15 @@
                         <h1 id="toolchains"><a class="header" href="#toolchains">Toolchains</a></h1>
 <p><code>rules_vivado</code> resolves the Xilinx Vivado install through Bazel
 toolchain resolution. You declare a
-<a href="./vivado_toolchain.html"><code>vivado_toolchain</code></a> that wraps a shell script
-sourcing your install, wrap it in <code>toolchain(...)</code>, and register it
-from <code>MODULE.bazel</code>. Every <code>vivado_*</code> rule then picks it up
-automatically — there is no per-target <code>xilinx_env</code> to thread through.</p>
-<p>Registering a toolchain is <strong>required</strong>: the per-rule <code>xilinx_env</code>
-attribute is deprecated and emits an analysis-time warning if set.</p>
+<a href="./vivado_toolchain.html"><code>vivado_toolchain</code></a>, wrap it in <code>toolchain(...)</code>,
+and register it from <code>MODULE.bazel</code>. Every <code>vivado_*</code> rule then picks
+it up automatically — there is no per-target <code>xilinx_env</code> to thread
+through.</p>
+<p>Registering a toolchain is <strong>required</strong>.</p>
 <h2 id="implementing-a-toolchain"><a class="header" href="#implementing-a-toolchain">Implementing a toolchain</a></h2>
-<h3 id="1-write-a-xilinx-environment-script"><a class="header" href="#1-write-a-xilinx-environment-script">1. Write a Xilinx environment script</a></h3>
-<p>By convention this lives at <code>tools/vivado/xilinx_env.sh</code>, but anywhere
-in the workspace works:</p>
-<pre><code class="language-bash">#!/usr/bin/env bash
-set -e
-export HOME=/tmp
-source /opt/Xilinx/Vivado/2024.2/settings64.sh
-export XILINXD_LICENSE_FILE=2100@license.example.com
-</code></pre>
-<p>For a node-locked <code>.lic</code> file on disk, replace
-<code>XILINXD_LICENSE_FILE</code> with the file path and set
-<code>requires_network = False</code> on the toolchain (see below).</p>
-<h3 id="2-declare-the-toolchain"><a class="header" href="#2-declare-the-toolchain">2. Declare the toolchain</a></h3>
-<pre><code class="language-python">load("@rules_vivado//vivado:toolchain.bzl", "vivado_toolchain")
-
-vivado_toolchain(
-    name = "vivado_local",
-    xilinx_env = "xilinx_env.sh",
-)
-
-toolchain(
-    name = "vivado_toolchain",
-    toolchain = ":vivado_local",
-    toolchain_type = "@rules_vivado//vivado:toolchain_type",
-)
-</code></pre>
-<h3 id="3-register-it"><a class="header" href="#3-register-it">3. Register it</a></h3>
-<pre><code class="language-python">register_toolchains("//tools/vivado:vivado_toolchain")
-</code></pre>
-<p>That's it — every <code>vivado_*</code> rule now resolves this toolchain.</p>
+<p>See <a href="./vivado_toolchain.html"><code>vivado_toolchain</code></a> — the rule's docstring
+has the worked quickstart, attribute reference, and the <code>env</code> vs
+<code>xilinx_env</code> framing.</p>
 <h2 id="network-vs-node-locked-licenses"><a class="header" href="#network-vs-node-locked-licenses">Network vs. node-locked licenses</a></h2>
 <p><code>vivado_toolchain.requires_network</code> defaults to <code>True</code>, which is
 correct for a floating/network license server
@@ -205,47 +177,15 @@ WebPACK) or for node-locked <code>.lic</code> files read from disk. Sandboxed an
 remote-execution builds need network disabled to be reproducible
 without the license server, so be deliberate here.</p>
 <h2 id="constraining-toolchains"><a class="header" href="#constraining-toolchains">Constraining toolchains</a></h2>
-<p>Register multiple <code>vivado_toolchain</code> instances side-by-side and let
-Bazel pick one per action via <code>exec_compatible_with</code> against the
-per-version <code>constraint_value</code>s in
+<p>To run multiple Vivado versions side-by-side, gate each
+<code>vivado_toolchain</code> with one of the per-version <code>constraint_value</code>s in
 <a href="https://github.com/hw-bzl/rules_vivado/blob/main/vivado/constraints/BUILD.bazel"><code>//vivado/constraints/BUILD.bazel</code></a>.
 Each constraint corresponds to one entry in <code>VIVADO_VERSIONS</code> (defined
 in
-<a href="https://github.com/hw-bzl/rules_vivado/blob/main/vivado/private/versions.bzl"><code>//vivado/private:versions.bzl</code></a>).</p>
-<pre><code class="language-python">load("@rules_vivado//vivado:toolchain.bzl", "vivado_toolchain")
-
-vivado_toolchain(
-    name = "vivado_2024_2",
-    xilinx_env = "xilinx_env_2024_2.sh",
-    version = "2024.2",
-)
-
-toolchain(
-    name = "vivado_toolchain_2024_2",
-    exec_compatible_with = ["@rules_vivado//vivado/constraints/version:2024.2"],
-    toolchain = ":vivado_2024_2",
-    toolchain_type = "@rules_vivado//vivado:toolchain_type",
-)
-
-platform(
-    name = "vivado_2024_2_platform",
-    constraint_values = ["@rules_vivado//vivado/constraints/version:2024.2"],
-    exec_properties = {
-        "container-image": "docker://your.registry/vivado:2024.2",
-    },
-    parents = ["@platforms//host"],
-)
-</code></pre>
-<p>Register both from <code>MODULE.bazel</code>:</p>
-<pre><code class="language-python">register_toolchains("//tools/vivado:vivado_toolchain_2024_2")
-register_execution_platforms("//tools/vivado:vivado_2024_2_platform")
-</code></pre>
-<p>The first registered exec platform is the default. Switch versions per
-build with <code>--platforms=//tools/vivado:vivado_2024_2_platform</code>, which
-also lets
-<code>target_compatible_with = ["@rules_vivado//vivado/constraints/version:2024.2"]</code>
-on a target evaluate against the right constraint
-(incompatible-at-default, compatible-when-platform-pinned).</p>
+<a href="https://github.com/hw-bzl/rules_vivado/blob/main/vivado/private/versions.bzl"><code>//vivado/private:versions.bzl</code></a>).
+The <a href="./vivado_toolchain.html"><code>vivado_toolchain</code></a> docstring has the
+full multi-version walkthrough — <code>platform(...)</code> setup,
+<code>register_execution_platforms</code>, and the <code>--platforms</code> switch.</p>
 <p>For per-target switching without a global flag, use a wrapper rule
 with <code>cfg = transition(...)</code>; see
 <a href="https://github.com/hw-bzl/rules_vivado/blob/main/tests/transition.bzl"><code>tests/transition.bzl</code></a>
