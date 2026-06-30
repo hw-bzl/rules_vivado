@@ -5,16 +5,20 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
-# One vivado_toolchain instance per Xilinx env script. Each `toolchain()`
+# One vivado_toolchain instance per Vivado shim. Each `toolchain()`
 # wrapper gates on a `//vivado/constraints/version:{ver}` constraint_value via
-# `exec_compatible_with`, so toolchain resolution picks the right env from the
-# active exec platform. Set `--platforms` (or use the `with_vivado_version`
+# `exec_compatible_with`, so toolchain resolution picks the right Vivado from
+# the active exec platform. Set `--platforms` (or use the `with_vivado_version`
 # transition in `//tests:transition.bzl`) to switch versions.
 
 vivado_toolchain(
     name = "vivado_2024_1",
+    env = {
+        "HOME": "/tmp",
+        "XILINXD_LICENSE_FILE": "2100@localhost",
+    },
     version = "2024.01",
-    xilinx_env = "xilinx_env.sh",
+    vivado = "vivado_2024_1.sh",
 )
 
 toolchain(
@@ -26,8 +30,12 @@ toolchain(
 
 vivado_toolchain(
     name = "vivado_2025_1",
+    env = {
+        "HOME": "/tmp",
+        "XILINXD_LICENSE_FILE": "2100@localhost",
+    },
     version = "2025.01",
-    xilinx_env = "xilinx_env_2025_1.sh",
+    vivado = "vivado_2025_1.sh",
 )
 
 toolchain(

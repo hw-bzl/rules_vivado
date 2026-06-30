@@ -49,13 +49,15 @@ def run_tcl_template(*, ctx, template, substitutions, input_files, output_files,
         substitutions = substitutions,
     )
 
-    # `xilinx_env` is the toolchain's optional shell-side escape hatch.
-    # Only fires when set — static env flows through `ctx.actions.run_shell`
-    # via `env.env`.
+    # `vivado` is the toolchain's tracked executable (typically a shim that
+    # `exec`s the install) — passed via `tools=` so runfiles come along
+    # when the user wires a `*_binary` rule. `xilinx_env` is an optional
+    # shell-side escape hatch sourced before it — plain data file. Static
+    # env flows through `run_shell(env=…)`.
     vivado_command = ""
     if env.xilinx_env:
         vivado_command += "source " + env.xilinx_env.path + " && "
-    vivado_command += "vivado -mode batch -source " + vivado_tcl.path
+    vivado_command += env.vivado.executable.path + " -mode batch -source " + vivado_tcl.path
     vivado_command += " -log " + vivado_log.path
     vivado_command += " -journal " + vivado_journal.path + "; "
     vivado_command += post_processing_command
@@ -79,6 +81,7 @@ def run_tcl_template(*, ctx, template, substitutions, input_files, output_files,
     ctx.actions.run_shell(
         outputs = outputs,
         inputs = action_inputs,
+        tools = [env.vivado],
         progress_message = "Running on vivado: {}".format(ctx.label.name),
         command = vivado_command,
         mnemonic = mnemonic,

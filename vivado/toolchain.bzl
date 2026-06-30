@@ -7,17 +7,28 @@ resolves the Xilinx environment.
 
 # Quickstart
 
-1. Declare a `vivado_toolchain` and a `toolchain()` wrapper in BUILD. Put your
-   Vivado install path and license server in `env`:
+1. Author a small bash shim that `exec`s your Vivado install. The shim is
+   the file Bazel tracks; it hard-codes the install path (typically a fixed
+   location baked into a container image):
+
+   ```bash
+   #!/usr/bin/env bash
+   # tools/vivado/vivado.sh
+   exec /opt/Xilinx/Vivado/2024.2/bin/vivado "$@"
+   ```
+
+   Mark it executable: `chmod +x tools/vivado/vivado.sh`.
+
+2. Declare a `vivado_toolchain` and a `toolchain()` wrapper in BUILD, pointing
+   at the shim. Put your license server and any extra env in `env`:
 
    ```starlark
    load("@rules_vivado//vivado:toolchain.bzl", "vivado_toolchain")
 
    vivado_toolchain(
        name = "vivado_local",
+       vivado = "vivado.sh",
        env = {
-           "XILINX_VIVADO": "/opt/Xilinx/Vivado/2024.2",
-           "PATH": "/opt/Xilinx/Vivado/2024.2/bin:/usr/bin:/bin",
            "XILINXD_LICENSE_FILE": "2100@license.example.com",
            "HOME": "/tmp",
        },
@@ -30,7 +41,7 @@ resolves the Xilinx environment.
    )
    ```
 
-2. Register it from MODULE.bazel:
+3. Register it from MODULE.bazel:
 
    ```starlark
    register_toolchains("//tools/vivado:vivado_toolchain")
@@ -39,8 +50,9 @@ resolves the Xilinx environment.
 Every `vivado_*` rule resolves this toolchain automatically.
 
 `xilinx_env` is an optional escape hatch — a shell script sourced inside the
-action immediately before `vivado` runs — for shell-side env composition that
-`env` cannot express. Prefer `env` and reach for it only when needed.
+action immediately before `vivado` runs — for shell-side env composition
+neither `env` nor the shim itself covers. Prefer `env` and the shim's own
+preamble first.
 
 # Constraining toolchains
 
@@ -54,10 +66,7 @@ load("@rules_vivado//vivado:toolchain.bzl", "vivado_toolchain")
 
 vivado_toolchain(
     name = "vivado_2024_2",
-    env = {
-        "XILINX_VIVADO": "/opt/Xilinx/Vivado/2024.2",
-        "PATH": "/opt/Xilinx/Vivado/2024.2/bin:/usr/bin:/bin",
-    },
+    vivado = "vivado_2024_2.sh",
 )
 
 toolchain(
@@ -100,6 +109,13 @@ VivadoToolchainInfo = provider(
         "env": "dict[str, str]: environment variables passed to every Vivado action.",
         "requires_network": "bool: whether Vivado actions need network access (typically for a network license server).",
         "version": "str: The version of Vivado associated with this toolchain.",
+        "vivado": (
+            "FilesToRunProvider: the executable Bazel invokes for every " +
+            "Vivado action. Passed via `tools=` so runfiles travel along. " +
+            "Typically a small shim that `exec`s the real `vivado` binary " +
+            "out of the install location (often a fixed path inside a " +
+            "container image), but any `*_binary` rule works too."
+        ),
         "xilinx_env": (
             "File or None: optional shell script sourced inside the action " +
             "shell immediately before `vivado` runs. Escape hatch for " +
@@ -112,6 +128,7 @@ def _vivado_toolchain_impl(ctx):
     return [
         platform_common.ToolchainInfo(
             vivado_info = VivadoToolchainInfo(
+                vivado = ctx.attr.vivado[DefaultInfo].files_to_run,
                 xilinx_env = ctx.file.xilinx_env,
                 requires_network = ctx.attr.requires_network,
                 env = ctx.attr.env,
@@ -149,12 +166,26 @@ walkthroughs.
         "version": attr.string(
             doc = "The version of Vivado associated with this toolchain.",
         ),
+        "vivado": attr.label(
+            doc = ("The Vivado executable. Typically a small bash shim that " +
+                   "`exec`s the real `vivado` out of a known install path " +
+                   "(e.g. baked into a container image), but any " +
+                   "`*_binary` rule works too — runfiles travel along. " +
+                   "Defaults to a stock shim that calls `vivado` from the " +
+                   "exec platform's `PATH` as a migration aid; production " +
+                   "toolchains should pin the install path with their own " +
+                   "shim."),
+            default = Label("//vivado/private:vivado.sh"),
+            allow_single_file = True,
+            executable = True,
+            cfg = "exec",
+        ),
         "xilinx_env": attr.label(
             doc = ("Optional escape hatch — a shell script sourced inside " +
                    "the action shell immediately before `vivado` runs, for " +
-                   "shell-side env composition `env` cannot express. Prefer " +
-                   "`env`."),
-            allow_single_file = [".sh"],
+                   "shell-side env composition `env` cannot express. " +
+                   "Prefer `env`."),
+            allow_single_file = True,
         ),
     },
 )
