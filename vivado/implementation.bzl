@@ -1,4 +1,4 @@
-"""Implementation-phase rules: placement, physical optimization, routing."""
+"""# Implementation-phase rules: placement, physical optimization, routing."""
 
 load(
     "//vivado:providers.bzl",
@@ -8,8 +8,7 @@ load(
 )
 load(
     "//vivado/private:common.bzl",
-    "OPTIONAL_TOOLCHAIN",
-    "XILINX_ENV_ATTR",
+    "TOOLCHAIN_TYPE",
     "run_tcl_template",
 )
 
@@ -49,7 +48,7 @@ def _vivado_placement_impl(ctx):
 vivado_placement = rule(
     doc = "Run placement on a (synthesis-optimized) checkpoint.",
     implementation = _vivado_placement_impl,
-    toolchains = OPTIONAL_TOOLCHAIN,
+    toolchains = [TOOLCHAIN_TYPE],
     attrs = {
         "checkpoint": attr.label(
             doc = "Synthesis checkpoint.",
@@ -69,7 +68,7 @@ vivado_placement = rule(
             doc = "Threads to pass to vivado which defines the amount of parallelism.",
             default = 8,
         ),
-    } | XILINX_ENV_ATTR,
+    },
     provides = [
         DefaultInfo,
         VivadoPlacementCheckpointInfo,
@@ -112,7 +111,7 @@ def _vivado_place_optimize_impl(ctx):
 vivado_place_optimize = rule(
     doc = "Run post-placement physical optimization.",
     implementation = _vivado_place_optimize_impl,
-    toolchains = OPTIONAL_TOOLCHAIN,
+    toolchains = [TOOLCHAIN_TYPE],
     attrs = {
         "checkpoint": attr.label(
             doc = "Placement checkpoint.",
@@ -132,7 +131,7 @@ vivado_place_optimize = rule(
             doc = "Threads to pass to vivado which defines the amount of parallelism.",
             default = 8,
         ),
-    } | XILINX_ENV_ATTR,
+    },
     provides = [
         DefaultInfo,
         VivadoPlacementCheckpointInfo,
@@ -191,7 +190,7 @@ def _vivado_routing_impl(ctx):
 vivado_routing = rule(
     doc = "Run routing on a placement checkpoint.",
     implementation = _vivado_routing_impl,
-    toolchains = OPTIONAL_TOOLCHAIN,
+    toolchains = [TOOLCHAIN_TYPE],
     attrs = {
         "checkpoint": attr.label(
             doc = "Placement checkpoint.",
@@ -211,7 +210,7 @@ vivado_routing = rule(
             doc = "Threads to pass to vivado which defines the amount of parallelism.",
             default = 8,
         ),
-    } | XILINX_ENV_ATTR,
+    },
     provides = [
         DefaultInfo,
         VivadoRoutingCheckpointInfo,

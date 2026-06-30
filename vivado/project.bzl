@@ -1,12 +1,11 @@
-"""vivado_create_project rule: build a Vivado project without synthesizing."""
+"""# vivado_create_project rule: build a Vivado project without synthesizing."""
 
 load("@rules_verilog//verilog:defs.bzl", "VerilogInfo")
 load("@rules_vhdl//vhdl:defs.bzl", "VhdlInfo")
 load("//vivado:providers.bzl", "VivadoIPBlockInfo")
 load(
     "//vivado/private:common.bzl",
-    "OPTIONAL_TOOLCHAIN",
-    "XILINX_ENV_ATTR",
+    "TOOLCHAIN_TYPE",
     "create_and_synth",
 )
 
@@ -17,7 +16,7 @@ def _vivado_create_project_impl(ctx):
 vivado_create_project = rule(
     implementation = _vivado_create_project_impl,
     doc = "Create a Vivado project from a verilog_library without running synthesis.",
-    toolchains = OPTIONAL_TOOLCHAIN,
+    toolchains = [TOOLCHAIN_TYPE],
     attrs = {
         "create_project_tcl_template": attr.label(
             doc = "The create project tcl template",
@@ -46,5 +45,5 @@ vivado_create_project = rule(
             doc = "The targeted xilinx part.",
             mandatory = True,
         ),
-    } | XILINX_ENV_ATTR,
+    },
 )

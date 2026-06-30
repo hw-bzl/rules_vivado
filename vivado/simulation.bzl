@@ -1,12 +1,11 @@
-"""Simulation rule: xsim_test."""
+"""# Simulation rule: xsim_test."""
 
 load("@rules_verilog//verilog:defs.bzl", "VerilogInfo")
 load("@rules_vhdl//vhdl:defs.bzl", "VhdlInfo")
 load("//vivado:providers.bzl", "VivadoIPBlockInfo")
 load(
     "//vivado/private:common.bzl",
-    "OPTIONAL_TOOLCHAIN",
-    "XILINX_ENV_ATTR",
+    "TOOLCHAIN_TYPE",
     "generate_file_load_tcl",
     "generate_ip_block_tcl",
     "run_tcl_template",
@@ -102,7 +101,7 @@ xsim_test = rule(
     doc = "Run a Vivado xsim simulation as a Bazel test.",
     implementation = _xsim_test_impl,
     test = True,
-    toolchains = OPTIONAL_TOOLCHAIN,
+    toolchains = [TOOLCHAIN_TYPE],
     attrs = {
         "ip_blocks": attr.label_list(
             doc = "Ip blocks to include in this design.",
@@ -131,5 +130,5 @@ xsim_test = rule(
             default = Label("//vivado/private:xsim_test.tcl.template"),
             allow_single_file = [".template"],
         ),
-    } | XILINX_ENV_ATTR,
+    },
 )

@@ -42,15 +42,14 @@ A `vivado_toolchain` is **mandatory** — every `vivado_*` rule resolves
 the Xilinx install through it. See [Toolchains](./toolchains.md) for
 how to author one.
 
-### `tools/vivado/xilinx_env.sh`
+### `tools/vivado/vivado.sh`
 
 ```bash
 #!/usr/bin/env bash
-set -e
-export HOME=/tmp
-source /opt/Xilinx/Vivado/2024.2/settings64.sh
-export XILINXD_LICENSE_FILE=2100@license.example.com
+exec /opt/Xilinx/Vivado/2024.2/bin/vivado "$@"
 ```
+
+Mark it executable: `chmod +x tools/vivado/vivado.sh`.
 
 ### `tools/vivado/BUILD.bazel`
 
@@ -59,7 +58,11 @@ load("@rules_vivado//vivado:toolchain.bzl", "vivado_toolchain")
 
 vivado_toolchain(
     name = "vivado_local",
-    xilinx_env = "xilinx_env.sh",
+    vivado = "vivado.sh",
+    env = {
+        "XILINXD_LICENSE_FILE": "2100@license.example.com",
+        "HOME": "/tmp",
+    },
 )
 
 toolchain(
@@ -68,6 +71,9 @@ toolchain(
     toolchain_type = "@rules_vivado//vivado:toolchain_type",
 )
 ```
+
+See [Toolchains](./toolchains.md) for license-server and multi-version
+setup.
 
 ### `hello/hello.sv`
 

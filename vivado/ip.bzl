@@ -1,4 +1,4 @@
-"""IP packaging rules: vivado_create_ip, vivado_interface_definition, vivado_create_interface_ip."""
+"""# IP packaging rules"""
 
 load("@rules_verilog//verilog:defs.bzl", "VerilogInfo")
 load("@rules_vhdl//vhdl:defs.bzl", "VhdlInfo")
@@ -9,8 +9,7 @@ load(
 )
 load(
     "//vivado/private:common.bzl",
-    "OPTIONAL_TOOLCHAIN",
-    "XILINX_ENV_ATTR",
+    "TOOLCHAIN_TYPE",
     "generate_encrypt_tcl",
     "generate_file_load_tcl",
     "generate_ip_block_tcl",
@@ -84,7 +83,7 @@ def _vivado_create_ip_impl(ctx):
 vivado_create_ip = rule(
     implementation = _vivado_create_ip_impl,
     doc = "Use vivado to package a module into an IP core",
-    toolchains = OPTIONAL_TOOLCHAIN,
+    toolchains = [TOOLCHAIN_TYPE],
     attrs = {
         "create_ip_block_template": attr.label(
             doc = "The create project tcl template",
@@ -134,7 +133,7 @@ vivado_create_ip = rule(
             doc = "The targeted xilinx part.",
             mandatory = True,
         ),
-    } | XILINX_ENV_ATTR,
+    },
     provides = [
         DefaultInfo,
         VivadoIPBlockInfo,
@@ -165,8 +164,7 @@ def _vivado_interface_definition_impl(ctx):
         outputs = [signals_json],
         mnemonic = "VivadoParseInterface",
         progress_message = "Parsing SV interface %{label}",
-        # Python parser/generator; doesn't need the vivado toolchain.
-        toolchain = None,
+        toolchain = TOOLCHAIN_TYPE,
     )
 
     bus_def_file = ctx.actions.declare_file("{}.xml".format(name))
@@ -220,8 +218,7 @@ def _vivado_interface_definition_impl(ctx):
         outputs = [bus_def_file, abs_def_file, setup_tcl_file],
         mnemonic = "VivadoGenInterfaceXml",
         progress_message = "Generating IP-XACT XML %{label}",
-        # Python parser/generator; doesn't need the vivado toolchain.
-        toolchain = None,
+        toolchain = TOOLCHAIN_TYPE,
     )
 
     outputs = [bus_def_file, abs_def_file, setup_tcl_file]
@@ -242,7 +239,7 @@ def _vivado_interface_definition_impl(ctx):
 vivado_interface_definition = rule(
     implementation = _vivado_interface_definition_impl,
     doc = "Generate Vivado IP-XACT interface definition files (bus definition and abstraction definition XML).",
-    toolchains = OPTIONAL_TOOLCHAIN,
+    toolchains = [TOOLCHAIN_TYPE],
     attrs = {
         "abstraction_definition_template": attr.label(
             doc = "The abstraction definition XML template.",
@@ -381,7 +378,7 @@ def _vivado_create_interface_ip_impl(ctx):
 vivado_create_interface_ip = rule(
     implementation = _vivado_create_interface_ip_impl,
     doc = "Package a Vivado interface definition as an IP block. Unlike vivado_create_ip, this does not require a top module.",
-    toolchains = OPTIONAL_TOOLCHAIN,
+    toolchains = [TOOLCHAIN_TYPE],
     attrs = {
         "create_interface_ip_template": attr.label(
             doc = "The TCL template for creating interface IP.",
@@ -409,7 +406,7 @@ vivado_create_interface_ip = rule(
             doc = "Display name for the vendor.",
             default = "",
         ),
-    } | XILINX_ENV_ATTR,
+    },
     provides = [
         DefaultInfo,
         VivadoIPBlockInfo,

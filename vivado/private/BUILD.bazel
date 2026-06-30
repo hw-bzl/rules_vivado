@@ -28,6 +28,7 @@ exports_files([
     "bus_definition.xml.template",
     "abstraction_definition.xml.template",
     "interface_setup.tcl.template",
+    "vivado.sh",
     "xilinx_keyfile.txt",
 ])
 

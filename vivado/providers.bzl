@@ -1,4 +1,4 @@
-"""Describe Vivado providers."""
+"""# Vivado providers."""
 
 VivadoSynthCheckpointInfo = provider(
     doc = "Contains information at output of synthesis.",
