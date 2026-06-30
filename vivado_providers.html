@@ -1,0 +1,289 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Providers - rules_vivado</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc.js"></script>
+    </head>
+    <body>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">rules_vivado</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/hw-bzl/rules_vivado" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <!-- Generated with Stardoc: http://skydoc.bazel.build -->
+<p>Describe Vivado providers.</p>
+<h2 id="providers"><a class="header" href="#providers">Providers</a></h2>
+<ul>
+<li><a href="#VivadoIPBlockInfo">VivadoIPBlockInfo</a></li>
+<li><a href="#VivadoInterfaceInfo">VivadoInterfaceInfo</a></li>
+<li><a href="#VivadoPlacementCheckpointInfo">VivadoPlacementCheckpointInfo</a></li>
+<li><a href="#VivadoRoutingCheckpointInfo">VivadoRoutingCheckpointInfo</a></li>
+<li><a href="#VivadoSynthCheckpointInfo">VivadoSynthCheckpointInfo</a></li>
+</ul>
+<p><a id="VivadoIPBlockInfo"></a></p>
+<h2 id="vivadoipblockinfo"><a class="header" href="#vivadoipblockinfo">VivadoIPBlockInfo</a></h2>
+<pre>
+load("@rules_vivado//vivado:providers.bzl", "VivadoIPBlockInfo")
+
+VivadoIPBlockInfo(<a href="#VivadoIPBlockInfo-is_interface">is_interface</a>, <a href="#VivadoIPBlockInfo-library">library</a>, <a href="#VivadoIPBlockInfo-module_top">module_top</a>, <a href="#VivadoIPBlockInfo-repo">repo</a>, <a href="#VivadoIPBlockInfo-vendor">vendor</a>, <a href="#VivadoIPBlockInfo-version">version</a>)
+</pre>
+<p>Info for a vivado ip block</p>
+<p><strong>FIELDS</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="VivadoIPBlockInfo-is_interface"></a>is_interface</td><td style="text-align: left">bool: True if this is an interface definition (repo-only, not instantiated via create_ip).</td></tr>
+<tr><td style="text-align: left"><a id="VivadoIPBlockInfo-library"></a>library</td><td style="text-align: left">string: The library that the ip block belongs to.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoIPBlockInfo-module_top"></a>module_top</td><td style="text-align: left">string: The name of the ip block top module.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoIPBlockInfo-repo"></a>repo</td><td style="text-align: left">list[File]: Directories containing the ip block (and any transitive ip block deps).</td></tr>
+<tr><td style="text-align: left"><a id="VivadoIPBlockInfo-vendor"></a>vendor</td><td style="text-align: left">string: The vendor of the ip block.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoIPBlockInfo-version"></a>version</td><td style="text-align: left">string: The ip block version.</td></tr>
+</tbody></table>
+</div>
+<p><a id="VivadoInterfaceInfo"></a></p>
+<h2 id="vivadointerfaceinfo"><a class="header" href="#vivadointerfaceinfo">VivadoInterfaceInfo</a></h2>
+<pre>
+load("@rules_vivado//vivado:providers.bzl", "VivadoInterfaceInfo")
+
+VivadoInterfaceInfo(<a href="#VivadoInterfaceInfo-abstraction_definition">abstraction_definition</a>, <a href="#VivadoInterfaceInfo-bus_definition">bus_definition</a>, <a href="#VivadoInterfaceInfo-library">library</a>, <a href="#VivadoInterfaceInfo-name">name</a>, <a href="#VivadoInterfaceInfo-setup_tcl">setup_tcl</a>, <a href="#VivadoInterfaceInfo-vendor">vendor</a>,
+                    <a href="#VivadoInterfaceInfo-version">version</a>)
+</pre>
+<p>Info for a Vivado IP-XACT interface definition</p>
+<p><strong>FIELDS</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="VivadoInterfaceInfo-abstraction_definition"></a>abstraction_definition</td><td style="text-align: left">File: The abstraction definition XML file.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoInterfaceInfo-bus_definition"></a>bus_definition</td><td style="text-align: left">File: The bus definition XML file.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoInterfaceInfo-library"></a>library</td><td style="text-align: left">string: The library VLNV component.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoInterfaceInfo-name"></a>name</td><td style="text-align: left">string: The interface name.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoInterfaceInfo-setup_tcl"></a>setup_tcl</td><td style="text-align: left">File: The TCL setup file for IP packaging.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoInterfaceInfo-vendor"></a>vendor</td><td style="text-align: left">string: The vendor VLNV component.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoInterfaceInfo-version"></a>version</td><td style="text-align: left">string: The version VLNV component.</td></tr>
+</tbody></table>
+</div>
+<p><a id="VivadoPlacementCheckpointInfo"></a></p>
+<h2 id="vivadoplacementcheckpointinfo"><a class="header" href="#vivadoplacementcheckpointinfo">VivadoPlacementCheckpointInfo</a></h2>
+<pre>
+load("@rules_vivado//vivado:providers.bzl", "VivadoPlacementCheckpointInfo")
+
+VivadoPlacementCheckpointInfo(<a href="#VivadoPlacementCheckpointInfo-checkpoint">checkpoint</a>)
+</pre>
+<p>Contains information at output of placement.</p>
+<p><strong>FIELDS</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="VivadoPlacementCheckpointInfo-checkpoint"></a>checkpoint</td><td style="text-align: left">File: a Vivado placement checkpoint (.dcp).</td></tr>
+</tbody></table>
+</div>
+<p><a id="VivadoRoutingCheckpointInfo"></a></p>
+<h2 id="vivadoroutingcheckpointinfo"><a class="header" href="#vivadoroutingcheckpointinfo">VivadoRoutingCheckpointInfo</a></h2>
+<pre>
+load("@rules_vivado//vivado:providers.bzl", "VivadoRoutingCheckpointInfo")
+
+VivadoRoutingCheckpointInfo(<a href="#VivadoRoutingCheckpointInfo-checkpoint">checkpoint</a>)
+</pre>
+<p>Contains information at output of routing.</p>
+<p><strong>FIELDS</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="VivadoRoutingCheckpointInfo-checkpoint"></a>checkpoint</td><td style="text-align: left">File: a Vivado post-route checkpoint (.dcp).</td></tr>
+</tbody></table>
+</div>
+<p><a id="VivadoSynthCheckpointInfo"></a></p>
+<h2 id="vivadosynthcheckpointinfo"><a class="header" href="#vivadosynthcheckpointinfo">VivadoSynthCheckpointInfo</a></h2>
+<pre>
+load("@rules_vivado//vivado:providers.bzl", "VivadoSynthCheckpointInfo")
+
+VivadoSynthCheckpointInfo(<a href="#VivadoSynthCheckpointInfo-checkpoint">checkpoint</a>)
+</pre>
+<p>Contains information at output of synthesis.</p>
+<p><strong>FIELDS</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="VivadoSynthCheckpointInfo-checkpoint"></a>checkpoint</td><td style="text-align: left">File: a Vivado synthesis checkpoint (.dcp).</td></tr>
+</tbody></table>
+</div>
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="vivado_simulation.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="vivado_simulation.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

@@ -1,0 +1,960 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>rules_vivado</title>
+        <meta name="robots" content="noindex">
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc.js"></script>
+    </head>
+    <body>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">rules_vivado</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/hw-bzl/rules_vivado" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="rules_vivado"><a class="header" href="#rules_vivado">rules_vivado</a></h1>
+<p>Bazel rules for Xilinx Vivado FPGA synthesis, placement, routing, and
+bitstream generation.</p>
+<h2 id="overview"><a class="header" href="#overview">Overview</a></h2>
+<p><code>rules_vivado</code> wires Xilinx Vivado into Bazel as a set of ordinary build
+and test rules. HDL sources flow in through
+<a href="https://registry.bazel.build/modules/rules_verilog"><code>rules_verilog</code></a>
+(<code>VerilogInfo</code>) and
+<a href="https://registry.bazel.build/modules/rules_vhdl"><code>rules_vhdl</code></a>
+(<code>VhdlInfo</code>); the same <code>*_library</code> targets can be reused for simulation
+and synthesis. The build phases are each their own rule
+(<a href="./vivado_synthesis.html"><code>vivado_synthesize</code></a>,
+<a href="./vivado_implementation.html"><code>vivado_placement</code></a>,
+<a href="./vivado_implementation.html"><code>vivado_routing</code></a>,
+<a href="./vivado_bitstream.html"><code>vivado_write_bitstream</code></a>, …) so checkpoints are
+cached between phases, or you can chain the whole flow with the
+<code>vivado_flow</code> macro.</p>
+<p>The Xilinx install itself is resolved via a registered
+<a href="./toolchains.html"><code>vivado_toolchain</code></a> — there is no per-target install
+path to configure once a toolchain is in place.</p>
+<h2 id="quick-start"><a class="header" href="#quick-start">Quick start</a></h2>
+<p>The walkthrough below takes a Verilog top module from source to
+bitstream with the <code>vivado_flow</code> macro.</p>
+<h3 id="modulebazel"><a class="header" href="#modulebazel"><code>MODULE.bazel</code></a></h3>
+<pre><code class="language-python">bazel_dep(name = "rules_verilog", version = "1.1.1")
+bazel_dep(name = "rules_vhdl", version = "0.1.1")
+bazel_dep(name = "rules_vivado", version = "{version}")
+
+register_toolchains("//tools/vivado:vivado_toolchain")
+</code></pre>
+<p>A <code>vivado_toolchain</code> is <strong>mandatory</strong> — every <code>vivado_*</code> rule resolves
+the Xilinx install through it. See <a href="./toolchains.html">Toolchains</a> for
+how to author one.</p>
+<h3 id="toolsvivadoxilinx_envsh"><a class="header" href="#toolsvivadoxilinx_envsh"><code>tools/vivado/xilinx_env.sh</code></a></h3>
+<pre><code class="language-bash">#!/usr/bin/env bash
+set -e
+export HOME=/tmp
+source /opt/Xilinx/Vivado/2024.2/settings64.sh
+export XILINXD_LICENSE_FILE=2100@license.example.com
+</code></pre>
+<h3 id="toolsvivadobuildbazel"><a class="header" href="#toolsvivadobuildbazel"><code>tools/vivado/BUILD.bazel</code></a></h3>
+<pre><code class="language-python">load("@rules_vivado//vivado:toolchain.bzl", "vivado_toolchain")
+
+vivado_toolchain(
+    name = "vivado_local",
+    xilinx_env = "xilinx_env.sh",
+)
+
+toolchain(
+    name = "vivado_toolchain",
+    toolchain = ":vivado_local",
+    toolchain_type = "@rules_vivado//vivado:toolchain_type",
+)
+</code></pre>
+<h3 id="hellohellosv"><a class="header" href="#hellohellosv"><code>hello/hello.sv</code></a></h3>
+<pre><code class="language-systemverilog">module hello (
+    input  wire clk,
+    input  wire rst,
+    output reg  led
+);
+  always_ff @(posedge clk) begin
+    if (rst) led &lt;= 1'b0;
+    else     led &lt;= ~led;
+  end
+endmodule
+</code></pre>
+<h3 id="hellobuildbazel"><a class="header" href="#hellobuildbazel"><code>hello/BUILD.bazel</code></a></h3>
+<pre><code class="language-python">load("@rules_verilog//verilog:defs.bzl", "verilog_library")
+load("@rules_vivado//vivado:defs.bzl", "vivado_flow")
+
+verilog_library(
+    name = "hello",
+    srcs = ["hello.sv"],
+    data = ["hello.xdc"],
+)
+
+vivado_flow(
+    name = "hello_bitstream",
+    module = ":hello",
+    module_top = "hello",
+    part_number = "xczu28dr-ffvg1517-2-e",
+)
+</code></pre>
+<h3 id="build-it"><a class="header" href="#build-it">Build it</a></h3>
+<pre><code class="language-text">$ bazel build //hello:hello_bitstream
+$ ls bazel-bin/hello/
+hello_bitstream.bit  hello_bitstream_route.dcp  ...
+</code></pre>
+<p><code>vivado_flow</code> is a convenience macro — it expands to the per-phase
+rules below so each checkpoint is cached on its own:</p>
+<ul>
+<li><code>hello_bitstream_synth</code> — synthesis (<code>.dcp</code>)</li>
+<li><code>hello_bitstream_synth_opt</code> — post-synthesis optimization</li>
+<li><code>hello_bitstream_placement</code> — placement</li>
+<li><code>hello_bitstream_place_opt</code> — post-placement optimization</li>
+<li><code>hello_bitstream_route</code> — routing</li>
+<li><code>hello_bitstream</code> — final <code>.bit</code></li>
+</ul>
+<p>Build any one of them directly to stop the flow early or to inspect
+intermediate reports.</p>
+<h2 id="going-further"><a class="header" href="#going-further">Going further</a></h2>
+<ul>
+<li><a href="./toolchains.html">Toolchains</a> — author a <code>vivado_toolchain</code>, register
+multiple versions, gate them with constraints and platforms.</li>
+<li><a href="./rules.html">Rules</a> — every public rule, indexed by build phase.</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="toolchains"><a class="header" href="#toolchains">Toolchains</a></h1>
+<p><code>rules_vivado</code> resolves the Xilinx Vivado install through Bazel
+toolchain resolution. You declare a
+<a href="./vivado_toolchain.html"><code>vivado_toolchain</code></a> that wraps a shell script
+sourcing your install, wrap it in <code>toolchain(...)</code>, and register it
+from <code>MODULE.bazel</code>. Every <code>vivado_*</code> rule then picks it up
+automatically — there is no per-target <code>xilinx_env</code> to thread through.</p>
+<p>Registering a toolchain is <strong>required</strong>: the per-rule <code>xilinx_env</code>
+attribute is deprecated and emits an analysis-time warning if set.</p>
+<h2 id="implementing-a-toolchain"><a class="header" href="#implementing-a-toolchain">Implementing a toolchain</a></h2>
+<h3 id="1-write-a-xilinx-environment-script"><a class="header" href="#1-write-a-xilinx-environment-script">1. Write a Xilinx environment script</a></h3>
+<p>By convention this lives at <code>tools/vivado/xilinx_env.sh</code>, but anywhere
+in the workspace works:</p>
+<pre><code class="language-bash">#!/usr/bin/env bash
+set -e
+export HOME=/tmp
+source /opt/Xilinx/Vivado/2024.2/settings64.sh
+export XILINXD_LICENSE_FILE=2100@license.example.com
+</code></pre>
+<p>For a node-locked <code>.lic</code> file on disk, replace
+<code>XILINXD_LICENSE_FILE</code> with the file path and set
+<code>requires_network = False</code> on the toolchain (see below).</p>
+<h3 id="2-declare-the-toolchain"><a class="header" href="#2-declare-the-toolchain">2. Declare the toolchain</a></h3>
+<pre><code class="language-python">load("@rules_vivado//vivado:toolchain.bzl", "vivado_toolchain")
+
+vivado_toolchain(
+    name = "vivado_local",
+    xilinx_env = "xilinx_env.sh",
+)
+
+toolchain(
+    name = "vivado_toolchain",
+    toolchain = ":vivado_local",
+    toolchain_type = "@rules_vivado//vivado:toolchain_type",
+)
+</code></pre>
+<h3 id="3-register-it"><a class="header" href="#3-register-it">3. Register it</a></h3>
+<pre><code class="language-python">register_toolchains("//tools/vivado:vivado_toolchain")
+</code></pre>
+<p>That's it — every <code>vivado_*</code> rule now resolves this toolchain.</p>
+<h2 id="network-vs-node-locked-licenses"><a class="header" href="#network-vs-node-locked-licenses">Network vs. node-locked licenses</a></h2>
+<p><code>vivado_toolchain.requires_network</code> defaults to <code>True</code>, which is
+correct for a floating/network license server
+(<code>XILINXD_LICENSE_FILE=PORT@HOST</code>). It sets the <code>requires-network</code>
+execution requirement on every <code>vivado_*</code> action.</p>
+<p>Set it to <code>False</code> for license-free editions (Vivado ML Standard /
+WebPACK) or for node-locked <code>.lic</code> files read from disk. Sandboxed and
+remote-execution builds need network disabled to be reproducible
+without the license server, so be deliberate here.</p>
+<h2 id="constraining-toolchains"><a class="header" href="#constraining-toolchains">Constraining toolchains</a></h2>
+<p>Register multiple <code>vivado_toolchain</code> instances side-by-side and let
+Bazel pick one per action via <code>exec_compatible_with</code> against the
+per-version <code>constraint_value</code>s in
+<a href="https://github.com/hw-bzl/rules_vivado/blob/main/vivado/constraints/BUILD.bazel"><code>//vivado/constraints/BUILD.bazel</code></a>.
+Each constraint corresponds to one entry in <code>VIVADO_VERSIONS</code> (defined
+in
+<a href="https://github.com/hw-bzl/rules_vivado/blob/main/vivado/private/versions.bzl"><code>//vivado/private:versions.bzl</code></a>).</p>
+<pre><code class="language-python">load("@rules_vivado//vivado:toolchain.bzl", "vivado_toolchain")
+
+vivado_toolchain(
+    name = "vivado_2024_2",
+    xilinx_env = "xilinx_env_2024_2.sh",
+    version = "2024.2",
+)
+
+toolchain(
+    name = "vivado_toolchain_2024_2",
+    exec_compatible_with = ["@rules_vivado//vivado/constraints/version:2024.2"],
+    toolchain = ":vivado_2024_2",
+    toolchain_type = "@rules_vivado//vivado:toolchain_type",
+)
+
+platform(
+    name = "vivado_2024_2_platform",
+    constraint_values = ["@rules_vivado//vivado/constraints/version:2024.2"],
+    exec_properties = {
+        "container-image": "docker://your.registry/vivado:2024.2",
+    },
+    parents = ["@platforms//host"],
+)
+</code></pre>
+<p>Register both from <code>MODULE.bazel</code>:</p>
+<pre><code class="language-python">register_toolchains("//tools/vivado:vivado_toolchain_2024_2")
+register_execution_platforms("//tools/vivado:vivado_2024_2_platform")
+</code></pre>
+<p>The first registered exec platform is the default. Switch versions per
+build with <code>--platforms=//tools/vivado:vivado_2024_2_platform</code>, which
+also lets
+<code>target_compatible_with = ["@rules_vivado//vivado/constraints/version:2024.2"]</code>
+on a target evaluate against the right constraint
+(incompatible-at-default, compatible-when-platform-pinned).</p>
+<p>For per-target switching without a global flag, use a wrapper rule
+with <code>cfg = transition(...)</code>; see
+<a href="https://github.com/hw-bzl/rules_vivado/blob/main/tests/transition.bzl"><code>tests/transition.bzl</code></a>
+for a <code>with_vivado_version</code> wrapper that takes a list of targets and
+pins the version for the whole group.</p>
+<p>Constraints are the only mechanism — there is no parallel build-setting
+/ flag-driven path. This keeps per-version metadata (constraints,
+<code>exec_properties</code> like <code>container-image</code>) all on the platform object
+where it belongs and avoids the two-sources-of-truth problem.</p>
+<h2 id="reference"><a class="header" href="#reference">Reference</a></h2>
+<p>See <a href="./vivado_toolchain.html"><code>vivado_toolchain</code></a> for the full attribute
+set and <a href="./vivado_providers.html"><code>VivadoToolchainInfo</code></a> for the
+resolved provider that downstream rules consume.</p>
+<div style="break-before: page; page-break-before: always;"></div><!-- Generated with Stardoc: http://skydoc.bazel.build -->
+<p>Toolchain for the Xilinx Vivado tool.</p>
+<p>Defines <code>VivadoToolchainInfo</code> and the <code>vivado_toolchain</code> rule. Users register a
+<code>vivado_toolchain</code> instance via <code>register_toolchains(...)</code> against the
+<code>//vivado:toolchain_type</code> toolchain type so that every <code>vivado_*</code> rule
+automatically resolves the Xilinx environment script instead of taking it as a
+per-target attribute.</p>
+<h1 id="quickstart"><a class="header" href="#quickstart">Quickstart</a></h1>
+<ol>
+<li>
+<p>Write a shell script that sources your Vivado install and (optionally) sets
+the license server. By convention this lives next to your toolchain BUILD
+file, e.g. <code>tools/vivado/xilinx_env.sh</code>:</p>
+<pre><code class="language-bash">#!/usr/bin/env bash
+set -e
+export HOME=/tmp
+source /opt/Xilinx/Vivado/2024.2/settings64.sh
+export XILINXD_LICENSE_FILE=2100@license.example.com
+</code></pre>
+</li>
+<li>
+<p>Declare a <code>vivado_toolchain</code> and a <code>toolchain()</code> wrapper in BUILD:</p>
+<pre><code class="language-starlark">load("@rules_vivado//vivado:toolchain.bzl", "vivado_toolchain")
+
+vivado_toolchain(
+    name = "vivado_local",
+    xilinx_env = "xilinx_env.sh",
+)
+
+toolchain(
+    name = "vivado_toolchain",
+    toolchain = ":vivado_local",
+    toolchain_type = "@rules_vivado//vivado:toolchain_type",
+)
+</code></pre>
+</li>
+<li>
+<p>Register it from MODULE.bazel:</p>
+<pre><code class="language-starlark">register_toolchains("//tools/vivado:vivado_toolchain")
+</code></pre>
+</li>
+</ol>
+<p>Every <code>vivado_*</code> rule will now resolve this toolchain automatically. Drop the
+deprecated per-rule <code>xilinx_env</code> attribute from your targets once registered.</p>
+<h1 id="constraining-toolchains-1"><a class="header" href="#constraining-toolchains-1">Constraining toolchains</a></h1>
+<p>Register multiple <code>vivado_toolchain</code> instances side-by-side and let Bazel pick
+one per action via <code>exec_compatible_with</code> against the per-version
+<code>constraint_value</code>s in <code>//vivado/constraints/BUILD.bazel</code>. Each constraint
+corresponds to one entry in <code>//vivado/private:versions.bzl</code> VIVADO_VERSIONS.</p>
+<pre><code class="language-starlark">load("@rules_vivado//vivado:toolchain.bzl", "vivado_toolchain")
+
+vivado_toolchain(
+    name = "vivado_2024_2",
+    xilinx_env = "xilinx_env_2024_2.sh",
+)
+
+toolchain(
+    name = "vivado_toolchain_2024_2",
+    exec_compatible_with = ["@rules_vivado//vivado/constraints/version:2024.2"],
+    toolchain = ":vivado_2024_2",
+    toolchain_type = "@rules_vivado//vivado:toolchain_type",
+)
+
+platform(
+    name = "vivado_2024_2_platform",
+    constraint_values = ["@rules_vivado//vivado/constraints/version:2024.2"],
+    exec_properties = {
+        "container-image": "docker://your.registry/vivado:2024.2",
+    },
+    parents = ["@platforms//host"],
+)
+</code></pre>
+<p>Register both the toolchain and the platform from <code>MODULE.bazel</code>:</p>
+<pre><code class="language-starlark">register_toolchains("//tools/vivado:vivado_toolchain_2024_2")
+register_execution_platforms("//tools/vivado:vivado_2024_2_platform")
+</code></pre>
+<p>The first registered exec platform becomes the default. Switch versions per
+build with <code>--platforms=//tools/vivado:vivado_2024_2_platform</code> (which also lets
+<code>target_compatible_with = ["@rules_vivado//vivado/constraints/version:2024.2"]</code>
+on a target evaluate against the right constraint), or use a wrapper rule with
+<code>cfg = transition(...)</code> to switch per target. See
+<code>//tests/transition.bzl</code> for an example <code>with_vivado_version</code> wrapper.</p>
+<h2 id="rules"><a class="header" href="#rules">Rules</a></h2>
+<ul>
+<li><a href="vivado_toolchain.html#vivado_toolchain">vivado_toolchain</a></li>
+</ul>
+<h2 id="providers"><a class="header" href="#providers">Providers</a></h2>
+<ul>
+<li><a href="vivado_toolchain.html#VivadoToolchainInfo">VivadoToolchainInfo</a></li>
+</ul>
+<p><a id="vivado_toolchain"></a></p>
+<h2 id="vivado_toolchain"><a class="header" href="#vivado_toolchain">vivado_toolchain</a></h2>
+<pre>
+load("@rules_vivado//vivado:toolchain.bzl", "vivado_toolchain")
+
+vivado_toolchain(<a href="vivado_toolchain.html#vivado_toolchain-name">name</a>, <a href="vivado_toolchain.html#vivado_toolchain-env">env</a>, <a href="vivado_toolchain.html#vivado_toolchain-requires_network">requires_network</a>, <a href="vivado_toolchain.html#vivado_toolchain-version">version</a>, <a href="vivado_toolchain.html#vivado_toolchain-xilinx_env">xilinx_env</a>)
+</pre>
+<p>Declares a Vivado toolchain backed by a shell script that sources the Xilinx environment.</p>
+<p>Wrap with <code>toolchain(...)</code> and register via <code>register_toolchains(...)</code> in
+MODULE.bazel so every <code>vivado_*</code> rule resolves it automatically. Multiple
+instances can be registered side-by-side and selected via <code>target_settings</code>
+(flag-driven) or <code>exec_compatible_with</code> (platform-driven). See the
+<code>//vivado:toolchain.bzl</code> module docstring and the rules_vivado README for full
+walkthroughs.</p>
+<p><strong>ATTRIBUTES</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="vivado_toolchain-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_toolchain-env"></a>env</td><td style="text-align: left">Environment variables to be used in Vivado actions.</td><td style="text-align: left"><a href="https://bazel.build/rules/lib/dict">Dictionary: String -&gt; String</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>{}</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_toolchain-requires_network"></a>requires_network</td><td style="text-align: left">Whether Vivado actions need network access. True (the default) is correct for a floating/network license server (<code>XILINXD_LICENSE_FILE=PORT@HOST</code>). Set to False for license-free editions (Vivado ML Standard / WebPACK) or node-locked .lic files read from disk. Controls whether the <code>requires-network</code> execution requirement is set on every <code>vivado_*</code> action.</td><td style="text-align: left">Boolean</td><td style="text-align: left">optional</td><td style="text-align: left"><code>True</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_toolchain-version"></a>version</td><td style="text-align: left">The version of Vivado associated with this toolchain.</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>""</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_toolchain-xilinx_env"></a>xilinx_env</td><td style="text-align: left">Shell script to source the Vivado environment and point at the license server.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+</tbody></table>
+</div>
+<p><a id="VivadoToolchainInfo"></a></p>
+<h2 id="vivadotoolchaininfo"><a class="header" href="#vivadotoolchaininfo">VivadoToolchainInfo</a></h2>
+<pre>
+load("@rules_vivado//vivado:toolchain.bzl", "VivadoToolchainInfo")
+
+VivadoToolchainInfo(<a href="vivado_toolchain.html#VivadoToolchainInfo-env">env</a>, <a href="vivado_toolchain.html#VivadoToolchainInfo-requires_network">requires_network</a>, <a href="vivado_toolchain.html#VivadoToolchainInfo-version">version</a>, <a href="vivado_toolchain.html#VivadoToolchainInfo-xilinx_env">xilinx_env</a>)
+</pre>
+<p>Toolchain info for the Xilinx Vivado tool.</p>
+<p><strong>FIELDS</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="VivadoToolchainInfo-env"></a>env</td><td style="text-align: left">dict[str, str]: environment variables to be used in Vivado actions.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoToolchainInfo-requires_network"></a>requires_network</td><td style="text-align: left">bool: whether Vivado actions need network access (typically for a network license server).</td></tr>
+<tr><td style="text-align: left"><a id="VivadoToolchainInfo-version"></a>version</td><td style="text-align: left">str: The version of Vivado associated with this toolchain.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoToolchainInfo-xilinx_env"></a>xilinx_env</td><td style="text-align: left">File: shell script sourced before invoking Vivado that sets up PATH and license server.</td></tr>
+</tbody></table>
+</div><div style="break-before: page; page-break-before: always;"></div><h1 id="rules-1"><a class="header" href="#rules-1">Rules</a></h1>
+<p>Every public rule in <code>rules_vivado</code>, grouped by the build phase it
+belongs to. All of them resolve their Xilinx install through a
+registered <a href="./toolchains.html"><code>vivado_toolchain</code></a>.</p>
+<h2 id="project-setup"><a class="header" href="#project-setup">Project setup</a></h2>
+<ul>
+<li><a href="./vivado_project.html"><code>vivado_create_project</code></a> — emit a Vivado
+project without running synthesis (useful for IDE handoff).</li>
+</ul>
+<h2 id="synthesis"><a class="header" href="#synthesis">Synthesis</a></h2>
+<ul>
+<li><a href="./vivado_synthesis.html"><code>vivado_synthesize</code></a> — run synthesis from an
+HDL library and produce a synthesis checkpoint (<code>.dcp</code>).</li>
+<li><a href="./vivado_synthesis.html"><code>vivado_synthesis_optimize</code></a> — post-synthesis
+optimization pass on a synthesis checkpoint.</li>
+</ul>
+<h2 id="implementation"><a class="header" href="#implementation">Implementation</a></h2>
+<ul>
+<li><a href="./vivado_implementation.html"><code>vivado_placement</code></a> — placement on a
+synthesis checkpoint.</li>
+<li><a href="./vivado_implementation.html"><code>vivado_place_optimize</code></a> —
+post-placement optimization on a placement checkpoint.</li>
+<li><a href="./vivado_implementation.html"><code>vivado_routing</code></a> — routing on a
+placement checkpoint.</li>
+</ul>
+<h2 id="bitstream"><a class="header" href="#bitstream">Bitstream</a></h2>
+<ul>
+<li><a href="./vivado_bitstream.html"><code>vivado_write_bitstream</code></a> — emit the final
+<code>.bit</code> (and optionally <code>.xsa</code>) from a routing checkpoint.</li>
+</ul>
+<h2 id="end-to-end-flow"><a class="header" href="#end-to-end-flow">End-to-end flow</a></h2>
+<ul>
+<li><code>vivado_flow</code> — convenience macro (loaded from
+<code>@rules_vivado//vivado:defs.bzl</code>) that chains synthesis → opt →
+placement → place-opt → routing → bitstream into one target name.
+See the <a href="./index.html#quick-start">Quick start</a> for a worked example.</li>
+</ul>
+<h2 id="ip-packaging"><a class="header" href="#ip-packaging">IP packaging</a></h2>
+<ul>
+<li><a href="./vivado_ip.html"><code>vivado_create_ip</code></a> — package an HDL module as a
+Vivado IP core.</li>
+<li><a href="./vivado_ip.html"><code>vivado_interface_definition</code></a> — generate IP-XACT
+bus + abstraction definitions from a SystemVerilog interface.</li>
+<li><a href="./vivado_ip.html"><code>vivado_create_interface_ip</code></a> — register an
+interface definition as an IP catalog entry so block designs can
+use it.</li>
+</ul>
+<h2 id="simulation"><a class="header" href="#simulation">Simulation</a></h2>
+<ul>
+<li><a href="./vivado_simulation.html"><code>xsim_test</code></a> — run a Vivado XSim
+simulation as a Bazel <code>test</code> target.</li>
+</ul>
+<h2 id="toolchain"><a class="header" href="#toolchain">Toolchain</a></h2>
+<ul>
+<li><a href="./vivado_toolchain.html"><code>vivado_toolchain</code></a> — declare a Vivado
+install for toolchain resolution. See
+<a href="./toolchains.html">Toolchains</a> for the full workflow.</li>
+</ul>
+<h2 id="providers-1"><a class="header" href="#providers-1">Providers</a></h2>
+<ul>
+<li><a href="./vivado_providers.html"><code>VivadoToolchainInfo</code> and friends</a> — the
+providers passed between phases (<code>VivadoSynthCheckpointInfo</code>,
+<code>VivadoPlacementCheckpointInfo</code>, <code>VivadoRoutingCheckpointInfo</code>,
+<code>VivadoIPBlockInfo</code>, <code>VivadoInterfaceInfo</code>).</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><!-- Generated with Stardoc: http://skydoc.bazel.build -->
+<p>vivado_create_project rule: build a Vivado project without synthesizing.</p>
+<h2 id="rules-2"><a class="header" href="#rules-2">Rules</a></h2>
+<ul>
+<li><a href="vivado_project.html#vivado_create_project">vivado_create_project</a></li>
+</ul>
+<p><a id="vivado_create_project"></a></p>
+<h2 id="vivado_create_project"><a class="header" href="#vivado_create_project">vivado_create_project</a></h2>
+<pre>
+load("@rules_vivado//vivado:project.bzl", "vivado_create_project")
+
+vivado_create_project(<a href="vivado_project.html#vivado_create_project-name">name</a>, <a href="vivado_project.html#vivado_create_project-create_project_tcl_template">create_project_tcl_template</a>, <a href="vivado_project.html#vivado_create_project-ip_blocks">ip_blocks</a>, <a href="vivado_project.html#vivado_create_project-jobs">jobs</a>, <a href="vivado_project.html#vivado_create_project-module">module</a>, <a href="vivado_project.html#vivado_create_project-module_top">module_top</a>,
+                      <a href="vivado_project.html#vivado_create_project-part_number">part_number</a>, <a href="vivado_project.html#vivado_create_project-xilinx_env">xilinx_env</a>)
+</pre>
+<p>Create a Vivado project from a verilog_library without running synthesis.</p>
+<p><strong>ATTRIBUTES</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="vivado_create_project-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_create_project-create_project_tcl_template"></a>create_project_tcl_template</td><td style="text-align: left">The create project tcl template</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:create_project.tcl.template"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_create_project-ip_blocks"></a>ip_blocks</td><td style="text-align: left">Ip blocks to include in this design.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_create_project-jobs"></a>jobs</td><td style="text-align: left">Jobs to pass to vivado which defines the amount of parallelism.</td><td style="text-align: left">Integer</td><td style="text-align: left">optional</td><td style="text-align: left"><code>4</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_create_project-module"></a>module</td><td style="text-align: left">The top level build.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_create_project-module_top"></a>module_top</td><td style="text-align: left">The name of the top level verilog module.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_create_project-part_number"></a>part_number</td><td style="text-align: left">The targeted xilinx part.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_create_project-xilinx_env"></a>xilinx_env</td><td style="text-align: left">DEPRECATED: prefer registering a <code>vivado_toolchain</code> and letting toolchain resolution pick the env. If set, this overrides the toolchain-resolved env for this target only and emits a deprecation warning at analysis time. See <code>//vivado:toolchain.bzl</code> and the README for migration.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>None</code></td></tr>
+</tbody></table>
+</div><div style="break-before: page; page-break-before: always;"></div><!-- Generated with Stardoc: http://skydoc.bazel.build -->
+<p>Synthesis-phase rules: vivado_synthesize and vivado_synthesis_optimize.</p>
+<h2 id="rules-3"><a class="header" href="#rules-3">Rules</a></h2>
+<ul>
+<li><a href="vivado_synthesis.html#vivado_synthesis_optimize">vivado_synthesis_optimize</a></li>
+<li><a href="vivado_synthesis.html#vivado_synthesize">vivado_synthesize</a></li>
+</ul>
+<p><a id="vivado_synthesis_optimize"></a></p>
+<h2 id="vivado_synthesis_optimize"><a class="header" href="#vivado_synthesis_optimize">vivado_synthesis_optimize</a></h2>
+<pre>
+load("@rules_vivado//vivado:synthesis.bzl", "vivado_synthesis_optimize")
+
+vivado_synthesis_optimize(<a href="vivado_synthesis.html#vivado_synthesis_optimize-name">name</a>, <a href="vivado_synthesis.html#vivado_synthesis_optimize-checkpoint">checkpoint</a>, <a href="vivado_synthesis.html#vivado_synthesis_optimize-opt_directive">opt_directive</a>, <a href="vivado_synthesis.html#vivado_synthesis_optimize-synthesis_optimize_template">synthesis_optimize_template</a>, <a href="vivado_synthesis.html#vivado_synthesis_optimize-threads">threads</a>,
+                          <a href="vivado_synthesis.html#vivado_synthesis_optimize-with_probes">with_probes</a>, <a href="vivado_synthesis.html#vivado_synthesis_optimize-xilinx_env">xilinx_env</a>)
+</pre>
+<p>Run post-synthesis optimization on a synthesis checkpoint.</p>
+<p><strong>ATTRIBUTES</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="vivado_synthesis_optimize-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_synthesis_optimize-checkpoint"></a>checkpoint</td><td style="text-align: left">Synthesis checkpoint.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_synthesis_optimize-opt_directive"></a>opt_directive</td><td style="text-align: left">The optimization directive.</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>"Explore"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_synthesis_optimize-synthesis_optimize_template"></a>synthesis_optimize_template</td><td style="text-align: left">The synthesis optimization tcl template</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:synth_optimize.tcl.template"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_synthesis_optimize-threads"></a>threads</td><td style="text-align: left">Threads to pass to vivado which defines the amount of parallelism.</td><td style="text-align: left">Integer</td><td style="text-align: left">optional</td><td style="text-align: left"><code>8</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_synthesis_optimize-with_probes"></a>with_probes</td><td style="text-align: left">Create debug probes.</td><td style="text-align: left">Boolean</td><td style="text-align: left">optional</td><td style="text-align: left"><code>False</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_synthesis_optimize-xilinx_env"></a>xilinx_env</td><td style="text-align: left">DEPRECATED: prefer registering a <code>vivado_toolchain</code> and letting toolchain resolution pick the env. If set, this overrides the toolchain-resolved env for this target only and emits a deprecation warning at analysis time. See <code>//vivado:toolchain.bzl</code> and the README for migration.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>None</code></td></tr>
+</tbody></table>
+</div>
+<p><a id="vivado_synthesize"></a></p>
+<h2 id="vivado_synthesize"><a class="header" href="#vivado_synthesize">vivado_synthesize</a></h2>
+<pre>
+load("@rules_vivado//vivado:synthesis.bzl", "vivado_synthesize")
+
+vivado_synthesize(<a href="vivado_synthesis.html#vivado_synthesize-name">name</a>, <a href="vivado_synthesis.html#vivado_synthesize-create_project_tcl_template">create_project_tcl_template</a>, <a href="vivado_synthesis.html#vivado_synthesize-ip_blocks">ip_blocks</a>, <a href="vivado_synthesis.html#vivado_synthesize-jobs">jobs</a>, <a href="vivado_synthesis.html#vivado_synthesize-module">module</a>, <a href="vivado_synthesis.html#vivado_synthesize-module_top">module_top</a>,
+                  <a href="vivado_synthesis.html#vivado_synthesize-part_number">part_number</a>, <a href="vivado_synthesis.html#vivado_synthesize-synth_strategy">synth_strategy</a>, <a href="vivado_synthesis.html#vivado_synthesize-xilinx_env">xilinx_env</a>)
+</pre>
+<p>Create a Vivado project and run synthesis on it.</p>
+<p><strong>ATTRIBUTES</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="vivado_synthesize-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_synthesize-create_project_tcl_template"></a>create_project_tcl_template</td><td style="text-align: left">The create project tcl template</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:create_project.tcl.template"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_synthesize-ip_blocks"></a>ip_blocks</td><td style="text-align: left">Ip blocks to include in this design.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_synthesize-jobs"></a>jobs</td><td style="text-align: left">Jobs to pass to vivado which defines the amount of parallelism.</td><td style="text-align: left">Integer</td><td style="text-align: left">optional</td><td style="text-align: left"><code>4</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_synthesize-module"></a>module</td><td style="text-align: left">The top level build.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_synthesize-module_top"></a>module_top</td><td style="text-align: left">The name of the top level verilog module.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_synthesize-part_number"></a>part_number</td><td style="text-align: left">The targeted xilinx part.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_synthesize-synth_strategy"></a>synth_strategy</td><td style="text-align: left">The synthesis strategy to use.</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>"Vivado Synthesis Defaults"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_synthesize-xilinx_env"></a>xilinx_env</td><td style="text-align: left">DEPRECATED: prefer registering a <code>vivado_toolchain</code> and letting toolchain resolution pick the env. If set, this overrides the toolchain-resolved env for this target only and emits a deprecation warning at analysis time. See <code>//vivado:toolchain.bzl</code> and the README for migration.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>None</code></td></tr>
+</tbody></table>
+</div><div style="break-before: page; page-break-before: always;"></div><!-- Generated with Stardoc: http://skydoc.bazel.build -->
+<p>Implementation-phase rules: placement, physical optimization, routing.</p>
+<h2 id="rules-4"><a class="header" href="#rules-4">Rules</a></h2>
+<ul>
+<li><a href="vivado_implementation.html#vivado_place_optimize">vivado_place_optimize</a></li>
+<li><a href="vivado_implementation.html#vivado_placement">vivado_placement</a></li>
+<li><a href="vivado_implementation.html#vivado_routing">vivado_routing</a></li>
+</ul>
+<p><a id="vivado_place_optimize"></a></p>
+<h2 id="vivado_place_optimize"><a class="header" href="#vivado_place_optimize">vivado_place_optimize</a></h2>
+<pre>
+load("@rules_vivado//vivado:implementation.bzl", "vivado_place_optimize")
+
+vivado_place_optimize(<a href="vivado_implementation.html#vivado_place_optimize-name">name</a>, <a href="vivado_implementation.html#vivado_place_optimize-checkpoint">checkpoint</a>, <a href="vivado_implementation.html#vivado_place_optimize-phys_opt_directive">phys_opt_directive</a>, <a href="vivado_implementation.html#vivado_place_optimize-place_optimize_template">place_optimize_template</a>, <a href="vivado_implementation.html#vivado_place_optimize-threads">threads</a>,
+                      <a href="vivado_implementation.html#vivado_place_optimize-xilinx_env">xilinx_env</a>)
+</pre>
+<p>Run post-placement physical optimization.</p>
+<p><strong>ATTRIBUTES</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="vivado_place_optimize-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_place_optimize-checkpoint"></a>checkpoint</td><td style="text-align: left">Placement checkpoint.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_place_optimize-phys_opt_directive"></a>phys_opt_directive</td><td style="text-align: left">The optimization directive.</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>"AggressiveExplore"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_place_optimize-place_optimize_template"></a>place_optimize_template</td><td style="text-align: left">The placement tcl template</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:place_optimize.tcl.template"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_place_optimize-threads"></a>threads</td><td style="text-align: left">Threads to pass to vivado which defines the amount of parallelism.</td><td style="text-align: left">Integer</td><td style="text-align: left">optional</td><td style="text-align: left"><code>8</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_place_optimize-xilinx_env"></a>xilinx_env</td><td style="text-align: left">DEPRECATED: prefer registering a <code>vivado_toolchain</code> and letting toolchain resolution pick the env. If set, this overrides the toolchain-resolved env for this target only and emits a deprecation warning at analysis time. See <code>//vivado:toolchain.bzl</code> and the README for migration.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>None</code></td></tr>
+</tbody></table>
+</div>
+<p><a id="vivado_placement"></a></p>
+<h2 id="vivado_placement"><a class="header" href="#vivado_placement">vivado_placement</a></h2>
+<pre>
+load("@rules_vivado//vivado:implementation.bzl", "vivado_placement")
+
+vivado_placement(<a href="vivado_implementation.html#vivado_placement-name">name</a>, <a href="vivado_implementation.html#vivado_placement-checkpoint">checkpoint</a>, <a href="vivado_implementation.html#vivado_placement-placement_directive">placement_directive</a>, <a href="vivado_implementation.html#vivado_placement-placement_template">placement_template</a>, <a href="vivado_implementation.html#vivado_placement-threads">threads</a>, <a href="vivado_implementation.html#vivado_placement-xilinx_env">xilinx_env</a>)
+</pre>
+<p>Run placement on a (synthesis-optimized) checkpoint.</p>
+<p><strong>ATTRIBUTES</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="vivado_placement-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_placement-checkpoint"></a>checkpoint</td><td style="text-align: left">Synthesis checkpoint.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_placement-placement_directive"></a>placement_directive</td><td style="text-align: left">The optimization directive.</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>"Explore"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_placement-placement_template"></a>placement_template</td><td style="text-align: left">The placement tcl template</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:placement.tcl.template"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_placement-threads"></a>threads</td><td style="text-align: left">Threads to pass to vivado which defines the amount of parallelism.</td><td style="text-align: left">Integer</td><td style="text-align: left">optional</td><td style="text-align: left"><code>8</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_placement-xilinx_env"></a>xilinx_env</td><td style="text-align: left">DEPRECATED: prefer registering a <code>vivado_toolchain</code> and letting toolchain resolution pick the env. If set, this overrides the toolchain-resolved env for this target only and emits a deprecation warning at analysis time. See <code>//vivado:toolchain.bzl</code> and the README for migration.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>None</code></td></tr>
+</tbody></table>
+</div>
+<p><a id="vivado_routing"></a></p>
+<h2 id="vivado_routing"><a class="header" href="#vivado_routing">vivado_routing</a></h2>
+<pre>
+load("@rules_vivado//vivado:implementation.bzl", "vivado_routing")
+
+vivado_routing(<a href="vivado_implementation.html#vivado_routing-name">name</a>, <a href="vivado_implementation.html#vivado_routing-checkpoint">checkpoint</a>, <a href="vivado_implementation.html#vivado_routing-route_directive">route_directive</a>, <a href="vivado_implementation.html#vivado_routing-route_template">route_template</a>, <a href="vivado_implementation.html#vivado_routing-threads">threads</a>, <a href="vivado_implementation.html#vivado_routing-xilinx_env">xilinx_env</a>)
+</pre>
+<p>Run routing on a placement checkpoint.</p>
+<p><strong>ATTRIBUTES</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="vivado_routing-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_routing-checkpoint"></a>checkpoint</td><td style="text-align: left">Placement checkpoint.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_routing-route_directive"></a>route_directive</td><td style="text-align: left">The routing directive.</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>"Explore"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_routing-route_template"></a>route_template</td><td style="text-align: left">The routing tcl template</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:route.tcl.template"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_routing-threads"></a>threads</td><td style="text-align: left">Threads to pass to vivado which defines the amount of parallelism.</td><td style="text-align: left">Integer</td><td style="text-align: left">optional</td><td style="text-align: left"><code>8</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_routing-xilinx_env"></a>xilinx_env</td><td style="text-align: left">DEPRECATED: prefer registering a <code>vivado_toolchain</code> and letting toolchain resolution pick the env. If set, this overrides the toolchain-resolved env for this target only and emits a deprecation warning at analysis time. See <code>//vivado:toolchain.bzl</code> and the README for migration.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>None</code></td></tr>
+</tbody></table>
+</div><div style="break-before: page; page-break-before: always;"></div><!-- Generated with Stardoc: http://skydoc.bazel.build -->
+<p>Bitstream-phase rule: vivado_write_bitstream.</p>
+<h2 id="rules-5"><a class="header" href="#rules-5">Rules</a></h2>
+<ul>
+<li><a href="vivado_bitstream.html#vivado_write_bitstream">vivado_write_bitstream</a></li>
+</ul>
+<p><a id="vivado_write_bitstream"></a></p>
+<h2 id="vivado_write_bitstream"><a class="header" href="#vivado_write_bitstream">vivado_write_bitstream</a></h2>
+<pre>
+load("@rules_vivado//vivado:bitstream.bzl", "vivado_write_bitstream")
+
+vivado_write_bitstream(<a href="vivado_bitstream.html#vivado_write_bitstream-name">name</a>, <a href="vivado_bitstream.html#vivado_write_bitstream-checkpoint">checkpoint</a>, <a href="vivado_bitstream.html#vivado_write_bitstream-threads">threads</a>, <a href="vivado_bitstream.html#vivado_write_bitstream-with_xsa">with_xsa</a>, <a href="vivado_bitstream.html#vivado_write_bitstream-write_bitstream_template">write_bitstream_template</a>, <a href="vivado_bitstream.html#vivado_write_bitstream-xilinx_env">xilinx_env</a>)
+</pre>
+<p>Write a Vivado bitstream (.bit) from a routed checkpoint, optionally including a .xsa.</p>
+<p><strong>ATTRIBUTES</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="vivado_write_bitstream-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_write_bitstream-checkpoint"></a>checkpoint</td><td style="text-align: left">Routed checkpoint.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_write_bitstream-threads"></a>threads</td><td style="text-align: left">Threads to pass to vivado which defines the amount of parallelism.</td><td style="text-align: left">Integer</td><td style="text-align: left">optional</td><td style="text-align: left"><code>8</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_write_bitstream-with_xsa"></a>with_xsa</td><td style="text-align: left">Generate xsa too</td><td style="text-align: left">Boolean</td><td style="text-align: left">optional</td><td style="text-align: left"><code>False</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_write_bitstream-write_bitstream_template"></a>write_bitstream_template</td><td style="text-align: left">The write bitstream tcl template</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:write_bitstream.tcl.template"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_write_bitstream-xilinx_env"></a>xilinx_env</td><td style="text-align: left">DEPRECATED: prefer registering a <code>vivado_toolchain</code> and letting toolchain resolution pick the env. If set, this overrides the toolchain-resolved env for this target only and emits a deprecation warning at analysis time. See <code>//vivado:toolchain.bzl</code> and the README for migration.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>None</code></td></tr>
+</tbody></table>
+</div><div style="break-before: page; page-break-before: always;"></div><!-- Generated with Stardoc: http://skydoc.bazel.build -->
+<p>IP packaging rules: vivado_create_ip, vivado_interface_definition, vivado_create_interface_ip.</p>
+<h2 id="rules-6"><a class="header" href="#rules-6">Rules</a></h2>
+<ul>
+<li><a href="vivado_ip.html#vivado_create_interface_ip">vivado_create_interface_ip</a></li>
+<li><a href="vivado_ip.html#vivado_create_ip">vivado_create_ip</a></li>
+<li><a href="vivado_ip.html#vivado_interface_definition">vivado_interface_definition</a></li>
+</ul>
+<p><a id="vivado_create_interface_ip"></a></p>
+<h2 id="vivado_create_interface_ip"><a class="header" href="#vivado_create_interface_ip">vivado_create_interface_ip</a></h2>
+<pre>
+load("@rules_vivado//vivado:ip.bzl", "vivado_create_interface_ip")
+
+vivado_create_interface_ip(<a href="vivado_ip.html#vivado_create_interface_ip-name">name</a>, <a href="vivado_ip.html#vivado_create_interface_ip-create_interface_ip_template">create_interface_ip_template</a>, <a href="vivado_ip.html#vivado_create_interface_ip-description">description</a>, <a href="vivado_ip.html#vivado_create_interface_ip-interface">interface</a>, <a href="vivado_ip.html#vivado_create_interface_ip-module">module</a>,
+                           <a href="vivado_ip.html#vivado_create_interface_ip-part_number">part_number</a>, <a href="vivado_ip.html#vivado_create_interface_ip-vendor_display_name">vendor_display_name</a>, <a href="vivado_ip.html#vivado_create_interface_ip-xilinx_env">xilinx_env</a>)
+</pre>
+<p>Package a Vivado interface definition as an IP block. Unlike vivado_create_ip, this does not require a top module.</p>
+<p><strong>ATTRIBUTES</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="vivado_create_interface_ip-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_create_interface_ip-create_interface_ip_template"></a>create_interface_ip_template</td><td style="text-align: left">The TCL template for creating interface IP.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:create_interface_ip.tcl.template"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_create_interface_ip-description"></a>description</td><td style="text-align: left">Description for the IP block.</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>""</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_create_interface_ip-interface"></a>interface</td><td style="text-align: left">The interface definition to package.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_create_interface_ip-module"></a>module</td><td style="text-align: left">The verilog_library containing the interface source file(s).</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>None</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_create_interface_ip-part_number"></a>part_number</td><td style="text-align: left">The targeted xilinx part.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_create_interface_ip-vendor_display_name"></a>vendor_display_name</td><td style="text-align: left">Display name for the vendor.</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>""</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_create_interface_ip-xilinx_env"></a>xilinx_env</td><td style="text-align: left">DEPRECATED: prefer registering a <code>vivado_toolchain</code> and letting toolchain resolution pick the env. If set, this overrides the toolchain-resolved env for this target only and emits a deprecation warning at analysis time. See <code>//vivado:toolchain.bzl</code> and the README for migration.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>None</code></td></tr>
+</tbody></table>
+</div>
+<p><a id="vivado_create_ip"></a></p>
+<h2 id="vivado_create_ip"><a class="header" href="#vivado_create_ip">vivado_create_ip</a></h2>
+<pre>
+load("@rules_vivado//vivado:ip.bzl", "vivado_create_ip")
+
+vivado_create_ip(<a href="vivado_ip.html#vivado_create_ip-name">name</a>, <a href="vivado_ip.html#vivado_create_ip-create_ip_block_template">create_ip_block_template</a>, <a href="vivado_ip.html#vivado_create_ip-encrypt">encrypt</a>, <a href="vivado_ip.html#vivado_create_ip-ip_blocks">ip_blocks</a>, <a href="vivado_ip.html#vivado_create_ip-ip_library">ip_library</a>, <a href="vivado_ip.html#vivado_create_ip-ip_vendor">ip_vendor</a>,
+                 <a href="vivado_ip.html#vivado_create_ip-ip_version">ip_version</a>, <a href="vivado_ip.html#vivado_create_ip-jobs">jobs</a>, <a href="vivado_ip.html#vivado_create_ip-keyfile">keyfile</a>, <a href="vivado_ip.html#vivado_create_ip-module">module</a>, <a href="vivado_ip.html#vivado_create_ip-module_top">module_top</a>, <a href="vivado_ip.html#vivado_create_ip-part_number">part_number</a>, <a href="vivado_ip.html#vivado_create_ip-xilinx_env">xilinx_env</a>)
+</pre>
+<p>Use vivado to package a module into an IP core</p>
+<p><strong>ATTRIBUTES</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="vivado_create_ip-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_create_ip-create_ip_block_template"></a>create_ip_block_template</td><td style="text-align: left">The create project tcl template</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:create_ip_block.tcl.template"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_create_ip-encrypt"></a>encrypt</td><td style="text-align: left">Encrypt the sources. Note: This requires a license. See: https://support.xilinx.com/s/article/68071?language=en_US</td><td style="text-align: left">Boolean</td><td style="text-align: left">optional</td><td style="text-align: left"><code>False</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_create_ip-ip_blocks"></a>ip_blocks</td><td style="text-align: left">Ip blocks to include in this design.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_create_ip-ip_library"></a>ip_library</td><td style="text-align: left">The version of this ip core.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_create_ip-ip_vendor"></a>ip_vendor</td><td style="text-align: left">The version of this ip core.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_create_ip-ip_version"></a>ip_version</td><td style="text-align: left">The version of this ip core.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_create_ip-jobs"></a>jobs</td><td style="text-align: left">Jobs to pass to vivado which defines the amount of parallelism.</td><td style="text-align: left">Integer</td><td style="text-align: left">optional</td><td style="text-align: left"><code>4</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_create_ip-keyfile"></a>keyfile</td><td style="text-align: left">The keyfile to use when optionally encrypting</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:xilinx_keyfile.txt"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_create_ip-module"></a>module</td><td style="text-align: left">The top level build.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_create_ip-module_top"></a>module_top</td><td style="text-align: left">The name of the top level verilog module.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_create_ip-part_number"></a>part_number</td><td style="text-align: left">The targeted xilinx part.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_create_ip-xilinx_env"></a>xilinx_env</td><td style="text-align: left">DEPRECATED: prefer registering a <code>vivado_toolchain</code> and letting toolchain resolution pick the env. If set, this overrides the toolchain-resolved env for this target only and emits a deprecation warning at analysis time. See <code>//vivado:toolchain.bzl</code> and the README for migration.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>None</code></td></tr>
+</tbody></table>
+</div>
+<p><a id="vivado_interface_definition"></a></p>
+<h2 id="vivado_interface_definition"><a class="header" href="#vivado_interface_definition">vivado_interface_definition</a></h2>
+<pre>
+load("@rules_vivado//vivado:ip.bzl", "vivado_interface_definition")
+
+vivado_interface_definition(<a href="vivado_ip.html#vivado_interface_definition-name">name</a>, <a href="vivado_ip.html#vivado_interface_definition-src">src</a>, <a href="vivado_ip.html#vivado_interface_definition-abstraction_definition_template">abstraction_definition_template</a>, <a href="vivado_ip.html#vivado_interface_definition-bus_definition_template">bus_definition_template</a>,
+                            <a href="vivado_ip.html#vivado_interface_definition-description">description</a>, <a href="vivado_ip.html#vivado_interface_definition-direct_connection">direct_connection</a>, <a href="vivado_ip.html#vivado_interface_definition-interface_name">interface_name</a>, <a href="vivado_ip.html#vivado_interface_definition-interface_setup_template">interface_setup_template</a>,
+                            <a href="vivado_ip.html#vivado_interface_definition-is_addressable">is_addressable</a>, <a href="vivado_ip.html#vivado_interface_definition-library">library</a>, <a href="vivado_ip.html#vivado_interface_definition-max_masters">max_masters</a>, <a href="vivado_ip.html#vivado_interface_definition-max_slaves">max_slaves</a>, <a href="vivado_ip.html#vivado_interface_definition-parser">parser</a>, <a href="vivado_ip.html#vivado_interface_definition-vendor">vendor</a>, <a href="vivado_ip.html#vivado_interface_definition-version">version</a>)
+</pre>
+<p>Generate Vivado IP-XACT interface definition files (bus definition and abstraction definition XML).</p>
+<p><strong>ATTRIBUTES</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="vivado_interface_definition-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_interface_definition-src"></a>src</td><td style="text-align: left">The SystemVerilog interface source file to parse.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_interface_definition-abstraction_definition_template"></a>abstraction_definition_template</td><td style="text-align: left">The abstraction definition XML template.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:abstraction_definition.xml.template"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_interface_definition-bus_definition_template"></a>bus_definition_template</td><td style="text-align: left">The bus definition XML template.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:bus_definition.xml.template"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_interface_definition-description"></a>description</td><td style="text-align: left">Description for the interface.</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>""</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_interface_definition-direct_connection"></a>direct_connection</td><td style="text-align: left">Whether direct connections are allowed.</td><td style="text-align: left">Boolean</td><td style="text-align: left">optional</td><td style="text-align: left"><code>True</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_interface_definition-interface_name"></a>interface_name</td><td style="text-align: left">The name of the interface (e.g., 'hbm_reader').</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_interface_definition-interface_setup_template"></a>interface_setup_template</td><td style="text-align: left">The interface setup TCL template.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:interface_setup.tcl.template"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_interface_definition-is_addressable"></a>is_addressable</td><td style="text-align: left">Whether the interface is addressable.</td><td style="text-align: left">Boolean</td><td style="text-align: left">optional</td><td style="text-align: left"><code>True</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_interface_definition-library"></a>library</td><td style="text-align: left">The library VLNV component (e.g., 'interface').</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>"interface"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_interface_definition-max_masters"></a>max_masters</td><td style="text-align: left">Maximum number of masters.</td><td style="text-align: left">Integer</td><td style="text-align: left">optional</td><td style="text-align: left"><code>1</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_interface_definition-max_slaves"></a>max_slaves</td><td style="text-align: left">Maximum number of slaves.</td><td style="text-align: left">Integer</td><td style="text-align: left">optional</td><td style="text-align: left"><code>1</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_interface_definition-parser"></a>parser</td><td style="text-align: left">Python parser script (SV -&gt; JSON). Override to customize SV parsing.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:parse_sv_interface"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_interface_definition-vendor"></a>vendor</td><td style="text-align: left">The vendor VLNV component (e.g., 'mycompany.com').</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_interface_definition-version"></a>version</td><td style="text-align: left">The version VLNV component (e.g., '1.0').</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>"1.0"</code></td></tr>
+</tbody></table>
+</div><div style="break-before: page; page-break-before: always;"></div><!-- Generated with Stardoc: http://skydoc.bazel.build -->
+<p>Simulation rule: xsim_test.</p>
+<h2 id="rules-7"><a class="header" href="#rules-7">Rules</a></h2>
+<ul>
+<li><a href="vivado_simulation.html#xsim_test">xsim_test</a></li>
+</ul>
+<p><a id="xsim_test"></a></p>
+<h2 id="xsim_test"><a class="header" href="#xsim_test">xsim_test</a></h2>
+<pre>
+load("@rules_vivado//vivado:simulation.bzl", "xsim_test")
+
+xsim_test(<a href="vivado_simulation.html#xsim_test-name">name</a>, <a href="vivado_simulation.html#xsim_test-ip_blocks">ip_blocks</a>, <a href="vivado_simulation.html#xsim_test-module">module</a>, <a href="vivado_simulation.html#xsim_test-module_top">module_top</a>, <a href="vivado_simulation.html#xsim_test-part_number">part_number</a>, <a href="vivado_simulation.html#xsim_test-with_waveform">with_waveform</a>, <a href="vivado_simulation.html#xsim_test-xilinx_env">xilinx_env</a>,
+          <a href="vivado_simulation.html#xsim_test-xsim_test_template">xsim_test_template</a>)
+</pre>
+<p>Run a Vivado xsim simulation as a Bazel test.</p>
+<p><strong>ATTRIBUTES</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="xsim_test-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="xsim_test-ip_blocks"></a>ip_blocks</td><td style="text-align: left">Ip blocks to include in this design.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="xsim_test-module"></a>module</td><td style="text-align: left">The top level build.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="xsim_test-module_top"></a>module_top</td><td style="text-align: left">The name of the top level verilog module.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="xsim_test-part_number"></a>part_number</td><td style="text-align: left">The targeted xilinx part.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="xsim_test-with_waveform"></a>with_waveform</td><td style="text-align: left">Generate with a waveform</td><td style="text-align: left">Boolean</td><td style="text-align: left">optional</td><td style="text-align: left"><code>False</code></td></tr>
+<tr><td style="text-align: left"><a id="xsim_test-xilinx_env"></a>xilinx_env</td><td style="text-align: left">DEPRECATED: prefer registering a <code>vivado_toolchain</code> and letting toolchain resolution pick the env. If set, this overrides the toolchain-resolved env for this target only and emits a deprecation warning at analysis time. See <code>//vivado:toolchain.bzl</code> and the README for migration.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>None</code></td></tr>
+<tr><td style="text-align: left"><a id="xsim_test-xsim_test_template"></a>xsim_test_template</td><td style="text-align: left">The tcl template to run on vivado.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:xsim_test.tcl.template"</code></td></tr>
+</tbody></table>
+</div><div style="break-before: page; page-break-before: always;"></div><!-- Generated with Stardoc: http://skydoc.bazel.build -->
+<p>Describe Vivado providers.</p>
+<h2 id="providers-2"><a class="header" href="#providers-2">Providers</a></h2>
+<ul>
+<li><a href="vivado_providers.html#VivadoIPBlockInfo">VivadoIPBlockInfo</a></li>
+<li><a href="vivado_providers.html#VivadoInterfaceInfo">VivadoInterfaceInfo</a></li>
+<li><a href="vivado_providers.html#VivadoPlacementCheckpointInfo">VivadoPlacementCheckpointInfo</a></li>
+<li><a href="vivado_providers.html#VivadoRoutingCheckpointInfo">VivadoRoutingCheckpointInfo</a></li>
+<li><a href="vivado_providers.html#VivadoSynthCheckpointInfo">VivadoSynthCheckpointInfo</a></li>
+</ul>
+<p><a id="VivadoIPBlockInfo"></a></p>
+<h2 id="vivadoipblockinfo"><a class="header" href="#vivadoipblockinfo">VivadoIPBlockInfo</a></h2>
+<pre>
+load("@rules_vivado//vivado:providers.bzl", "VivadoIPBlockInfo")
+
+VivadoIPBlockInfo(<a href="vivado_providers.html#VivadoIPBlockInfo-is_interface">is_interface</a>, <a href="vivado_providers.html#VivadoIPBlockInfo-library">library</a>, <a href="vivado_providers.html#VivadoIPBlockInfo-module_top">module_top</a>, <a href="vivado_providers.html#VivadoIPBlockInfo-repo">repo</a>, <a href="vivado_providers.html#VivadoIPBlockInfo-vendor">vendor</a>, <a href="vivado_providers.html#VivadoIPBlockInfo-version">version</a>)
+</pre>
+<p>Info for a vivado ip block</p>
+<p><strong>FIELDS</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="VivadoIPBlockInfo-is_interface"></a>is_interface</td><td style="text-align: left">bool: True if this is an interface definition (repo-only, not instantiated via create_ip).</td></tr>
+<tr><td style="text-align: left"><a id="VivadoIPBlockInfo-library"></a>library</td><td style="text-align: left">string: The library that the ip block belongs to.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoIPBlockInfo-module_top"></a>module_top</td><td style="text-align: left">string: The name of the ip block top module.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoIPBlockInfo-repo"></a>repo</td><td style="text-align: left">list[File]: Directories containing the ip block (and any transitive ip block deps).</td></tr>
+<tr><td style="text-align: left"><a id="VivadoIPBlockInfo-vendor"></a>vendor</td><td style="text-align: left">string: The vendor of the ip block.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoIPBlockInfo-version"></a>version</td><td style="text-align: left">string: The ip block version.</td></tr>
+</tbody></table>
+</div>
+<p><a id="VivadoInterfaceInfo"></a></p>
+<h2 id="vivadointerfaceinfo"><a class="header" href="#vivadointerfaceinfo">VivadoInterfaceInfo</a></h2>
+<pre>
+load("@rules_vivado//vivado:providers.bzl", "VivadoInterfaceInfo")
+
+VivadoInterfaceInfo(<a href="vivado_providers.html#VivadoInterfaceInfo-abstraction_definition">abstraction_definition</a>, <a href="vivado_providers.html#VivadoInterfaceInfo-bus_definition">bus_definition</a>, <a href="vivado_providers.html#VivadoInterfaceInfo-library">library</a>, <a href="vivado_providers.html#VivadoInterfaceInfo-name">name</a>, <a href="vivado_providers.html#VivadoInterfaceInfo-setup_tcl">setup_tcl</a>, <a href="vivado_providers.html#VivadoInterfaceInfo-vendor">vendor</a>,
+                    <a href="vivado_providers.html#VivadoInterfaceInfo-version">version</a>)
+</pre>
+<p>Info for a Vivado IP-XACT interface definition</p>
+<p><strong>FIELDS</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="VivadoInterfaceInfo-abstraction_definition"></a>abstraction_definition</td><td style="text-align: left">File: The abstraction definition XML file.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoInterfaceInfo-bus_definition"></a>bus_definition</td><td style="text-align: left">File: The bus definition XML file.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoInterfaceInfo-library"></a>library</td><td style="text-align: left">string: The library VLNV component.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoInterfaceInfo-name"></a>name</td><td style="text-align: left">string: The interface name.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoInterfaceInfo-setup_tcl"></a>setup_tcl</td><td style="text-align: left">File: The TCL setup file for IP packaging.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoInterfaceInfo-vendor"></a>vendor</td><td style="text-align: left">string: The vendor VLNV component.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoInterfaceInfo-version"></a>version</td><td style="text-align: left">string: The version VLNV component.</td></tr>
+</tbody></table>
+</div>
+<p><a id="VivadoPlacementCheckpointInfo"></a></p>
+<h2 id="vivadoplacementcheckpointinfo"><a class="header" href="#vivadoplacementcheckpointinfo">VivadoPlacementCheckpointInfo</a></h2>
+<pre>
+load("@rules_vivado//vivado:providers.bzl", "VivadoPlacementCheckpointInfo")
+
+VivadoPlacementCheckpointInfo(<a href="vivado_providers.html#VivadoPlacementCheckpointInfo-checkpoint">checkpoint</a>)
+</pre>
+<p>Contains information at output of placement.</p>
+<p><strong>FIELDS</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="VivadoPlacementCheckpointInfo-checkpoint"></a>checkpoint</td><td style="text-align: left">File: a Vivado placement checkpoint (.dcp).</td></tr>
+</tbody></table>
+</div>
+<p><a id="VivadoRoutingCheckpointInfo"></a></p>
+<h2 id="vivadoroutingcheckpointinfo"><a class="header" href="#vivadoroutingcheckpointinfo">VivadoRoutingCheckpointInfo</a></h2>
+<pre>
+load("@rules_vivado//vivado:providers.bzl", "VivadoRoutingCheckpointInfo")
+
+VivadoRoutingCheckpointInfo(<a href="vivado_providers.html#VivadoRoutingCheckpointInfo-checkpoint">checkpoint</a>)
+</pre>
+<p>Contains information at output of routing.</p>
+<p><strong>FIELDS</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="VivadoRoutingCheckpointInfo-checkpoint"></a>checkpoint</td><td style="text-align: left">File: a Vivado post-route checkpoint (.dcp).</td></tr>
+</tbody></table>
+</div>
+<p><a id="VivadoSynthCheckpointInfo"></a></p>
+<h2 id="vivadosynthcheckpointinfo"><a class="header" href="#vivadosynthcheckpointinfo">VivadoSynthCheckpointInfo</a></h2>
+<pre>
+load("@rules_vivado//vivado:providers.bzl", "VivadoSynthCheckpointInfo")
+
+VivadoSynthCheckpointInfo(<a href="vivado_providers.html#VivadoSynthCheckpointInfo-checkpoint">checkpoint</a>)
+</pre>
+<p>Contains information at output of synthesis.</p>
+<p><strong>FIELDS</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="VivadoSynthCheckpointInfo-checkpoint"></a>checkpoint</td><td style="text-align: left">File: a Vivado synthesis checkpoint (.dcp).</td></tr>
+</tbody></table>
+</div>
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+    </div>
+    </body>
+</html>
