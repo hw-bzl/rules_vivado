@@ -16,7 +16,7 @@ Add the following to your `MODULE.bazel`:
 ```starlark
 bazel_dep(name = "rules_verilog", version = "1.1.1")
 bazel_dep(name = "rules_vhdl", version = "0.1.1")
-bazel_dep(name = "rules_vivado", version = "0.1.0")
+bazel_dep(name = "rules_vivado", version = "0.2.0")
 ```
 
 Then register at least one `vivado_toolchain` so every `vivado_*` rule can resolve the Xilinx environment script automatically — see [Toolchains](#toolchains) below.
