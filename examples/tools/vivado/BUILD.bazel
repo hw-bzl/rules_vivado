@@ -1,0 +1,16 @@
+load("@rules_vivado//vivado:toolchain.bzl", "vivado_toolchain")
+
+vivado_toolchain(
+    name = "vivado_local",
+    env = {
+        "HOME": "/tmp",
+        "XILINXD_LICENSE_FILE": "2100@license.example.com",
+    },
+    vivado = "vivado.sh",
+)
+
+toolchain(
+    name = "vivado_toolchain",
+    toolchain = ":vivado_local",
+    toolchain_type = "@rules_vivado//vivado:toolchain_type",
+)

@@ -24,7 +24,6 @@ jobs:
           buildifier -lint=warn -mode=check -warnings=all -r .
 
   test:
-    name: Verilator Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -40,3 +39,29 @@ jobs:
       - name: Run tests
         run: |
           bazel test //...
+
+  examples:
+    # Shakes out the external-consumer surface — same workspace layout,
+    # same MODULE.bazel shape, same toolchain registration a downstream
+    # user would author. Analysis-only (`--nobuild`) because GitHub
+    # runners don't ship Vivado; the check covers toolchain resolution,
+    # attr validation, and macro expansion — everything short of the
+    # binary invocation itself. Mirrors the BCR presubmit that also
+    # points at `examples/`.
+    name: Examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Mount bazel cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/bazel
+          key: ${{ runner.os }}-bazel-examples-${{ hashFiles('MODULE.bazel', 'examples/MODULE.bazel') }}
+          restore-keys: |
+            ${{ runner.os }}-bazel-examples-
+
+      - name: Analyze examples workspace
+        working-directory: examples
+        run: |
+          bazel build --nobuild //...

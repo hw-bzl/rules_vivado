@@ -1,0 +1,26 @@
+load("@rules_verilog//verilog:defs.bzl", "verilog_library")
+load("@rules_vivado//vivado:defs.bzl", "vivado_flow", "vivado_synthesize")
+
+verilog_library(
+    name = "hello",
+    srcs = ["hello.sv"],
+)
+
+# Single-phase synthesis target — produces a synth .dcp.
+vivado_synthesize(
+    name = "hello_synth",
+    module = ":hello",
+    module_top = "hello",
+    part_number = "xczu28dr-ffvg1517-2-e",
+)
+
+# End-to-end flow — chains synth → opt → place → place_opt → route →
+# bitstream. Build `:hello_flow` for the final `.bit`; build the per-phase
+# sub-targets (`:hello_flow_synth`, `:hello_flow_route`, …) to inspect
+# intermediate checkpoints.
+vivado_flow(
+    name = "hello_flow",
+    module = ":hello",
+    module_top = "hello",
+    part_number = "xczu28dr-ffvg1517-2-e",
+)
