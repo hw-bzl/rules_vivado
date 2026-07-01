@@ -1,0 +1,28 @@
+"""Example consumer module for rules_vivado.
+
+This module shape is what an external user would author. The BCR presubmit
+points its `bcr_test_module` here so every release is exercised through the
+same surface a downstream consumer would use.
+
+The `version` field on `bazel_dep(name = "rules_vivado", ...)` is overridden
+by the BCR runner with the version under test, so the literal here is only
+load-bearing for local builds.
+"""
+
+module(
+    name = "rules_vivado_examples",
+    version = "0.0.0",
+)
+
+bazel_dep(name = "rules_vivado", version = "0.0.0")
+bazel_dep(name = "rules_verilog", version = "1.1.1")
+
+# For local builds, resolve `rules_vivado` to the in-tree checkout. BCR's
+# presubmit runner strips this and substitutes the version under test, so
+# the override is a no-op there.
+local_path_override(
+    module_name = "rules_vivado",
+    path = "..",
+)
+
+register_toolchains("//tools/vivado:vivado_toolchain")
