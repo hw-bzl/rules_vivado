@@ -176,7 +176,6 @@ that phase writes.
 
 - [Toolchains](./toolchains.md) — author a `vivado_toolchain`, register
   multiple versions, gate them with constraints and platforms.
-- [Rule flow](./flow.md) — diagrams of how the rules and providers
-  connect, from HDL libraries through IP composition to bitstream and
-  simulation.
-- [Rules](./rules.md) — every public rule, indexed by build phase.
+- [Rules](./rules.md) — every public rule, indexed by build phase,
+  with diagrams of how the rules and providers connect from HDL
+  libraries through IP composition to bitstream and simulation.

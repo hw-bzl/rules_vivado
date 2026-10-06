@@ -4,7 +4,6 @@
 
 - [Toolchains](./toolchains.md)
   - [vivado_toolchain](./vivado_toolchain.md)
-- [Rule flow](./flow.md)
 - [Rules](./rules.md)
   - [vivado_project](./vivado_project.md)
   - [vivado_project_export](./vivado_project_export.md)
