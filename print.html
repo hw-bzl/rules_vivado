@@ -305,10 +305,9 @@ that phase writes.</p>
 <ul>
 <li><a href="./toolchains.html">Toolchains</a> — author a <code>vivado_toolchain</code>, register
 multiple versions, gate them with constraints and platforms.</li>
-<li><a href="./flow.html">Rule flow</a> — diagrams of how the rules and providers
-connect, from HDL libraries through IP composition to bitstream and
-simulation.</li>
-<li><a href="./rules.html">Rules</a> — every public rule, indexed by build phase.</li>
+<li><a href="./rules.html">Rules</a> — every public rule, indexed by build phase,
+with diagrams of how the rules and providers connect from HDL
+libraries through IP composition to bitstream and simulation.</li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="toolchains"><a class="header" href="#toolchains">Toolchains</a></h1>
 <p><code>rules_vivado</code> resolves the Xilinx Vivado install through Bazel
@@ -406,13 +405,16 @@ VivadoToolchainInfo(*, <a href="vivado_toolchain.html#VivadoToolchainInfo-vivado
 <tr><td style="text-align: left"><a id="VivadoToolchainInfo-version"></a>version</td><td style="text-align: left">str: The version of Vivado associated with this toolchain. Default <code>""</code>.</td><td style="text-align: left"><code>""</code></td></tr>
 <tr><td style="text-align: left"><a id="VivadoToolchainInfo-xilinx_env"></a>xilinx_env</td><td style="text-align: left">File or None: optional shell script sourced immediately before <code>vivado</code> runs, for shell-side env composition <code>env</code> cannot express. Default <code>None</code>.</td><td style="text-align: left"><code>None</code></td></tr>
 </tbody></table>
-</div><div style="break-before: page; page-break-before: always;"></div><h1 id="rule-flow"><a class="header" href="#rule-flow">Rule flow</a></h1>
-<p>How the rules connect. Every <code>vivado_*</code> rule resolves the Xilinx install
-through the registered <a href="./toolchains.html"><code>vivado_toolchain</code></a>; that edge
-is left out of the diagrams below because it reaches every node.</p>
-<p>Each box is a rule. Each arrow is a Bazel dependency, labelled with the
-attribute on the consuming rule and the provider that crosses it. Boxes
-outside the dashed groups come from other rulesets.</p>
+</div><div style="break-before: page; page-break-before: always;"></div><h1 id="rules-1"><a class="header" href="#rules-1">Rules</a></h1>
+<p>Every public rule in <code>rules_vivado</code>, grouped by the build phase it
+belongs to, with diagrams of how each group connects. All of them
+resolve their Xilinx install through a registered
+<a href="./toolchains.html"><code>vivado_toolchain</code></a>; that edge is left out of the
+diagrams because it reaches every node.</p>
+<p>In the diagrams, each box is a rule and each arrow is a Bazel
+dependency, labelled with the attribute on the consuming rule and the
+provider that crosses it. Boxes outside the dashed groups come from
+other rulesets.</p>
 <h2 id="end-to-end"><a class="header" href="#end-to-end">End to end</a></h2>
 <pre class="mermaid">flowchart LR
     subgraph hdl [HDL and constraints]
@@ -489,6 +491,18 @@ outside the dashed groups come from other rulesets.</p>
 simulation libraries for a third-party simulator and hands the result to
 whatever consumes a <code>vivado_export_simulation</code> bundle, outside this
 ruleset.</p>
+<h2 id="project-setup"><a class="header" href="#project-setup">Project setup</a></h2>
+<ul>
+<li><a href="./vivado_project.html"><code>vivado_project</code></a> — emit a TCL script that
+creates a Vivado project (no Vivado invocation at build time).
+Consumed by <code>vivado_synthesis</code>, the simulation rules,
+<code>vivado_project_export</code>, and GUI launchers.</li>
+<li><a href="./vivado_xdc_library.html"><code>xdc_library</code></a> — bundle constraint files
+with the constraint files they must run after; drops into
+<code>vivado_project.data</code>.</li>
+<li><a href="./vivado_project_export.html"><code>vivado_project_export</code></a> — open the
+project, source a user <code>tcl_binary</code>, and capture the files it writes.</li>
+</ul>
 <h2 id="project-to-bitstream"><a class="header" href="#project-to-bitstream">Project to bitstream</a></h2>
 <p>The implementation chain is one rule per Vivado command, and each rule
 accepts the provider of the phase before it. The two optimization phases
@@ -496,6 +510,34 @@ are optional: <code>vivado_placement</code> takes a <code>VivadoSynthCheckpointI
 from either <code>vivado_synthesis</code> or <code>vivado_synthesis_optimize</code>, and
 <code>vivado_routing</code> takes a <code>VivadoPlacementCheckpointInfo</code> from either
 <code>vivado_placement</code> or <code>vivado_place_optimize</code>.</p>
+<h3 id="synthesis"><a class="header" href="#synthesis">Synthesis</a></h3>
+<ul>
+<li><a href="./vivado_synthesis.html"><code>vivado_synthesis</code></a> — run synthesis on a
+<code>vivado_project</code> and produce a synthesis checkpoint (<code>.dcp</code>).</li>
+<li><a href="./vivado_synthesis.html"><code>vivado_synthesis_optimize</code></a> — post-synthesis
+optimization pass on a synthesis checkpoint.</li>
+</ul>
+<h3 id="implementation"><a class="header" href="#implementation">Implementation</a></h3>
+<ul>
+<li><a href="./vivado_implementation.html"><code>vivado_placement</code></a> — placement on a
+synthesis checkpoint.</li>
+<li><a href="./vivado_implementation.html"><code>vivado_place_optimize</code></a> —
+post-placement optimization on a placement checkpoint.</li>
+<li><a href="./vivado_implementation.html"><code>vivado_routing</code></a> — routing on a
+placement checkpoint.</li>
+</ul>
+<h3 id="hand-off-artifacts"><a class="header" href="#hand-off-artifacts">Hand-off artifacts</a></h3>
+<ul>
+<li><a href="./vivado_bitstream.html"><code>vivado_bitstream</code></a> — emit the final <code>.bit</code>
+from a routing checkpoint.</li>
+<li><a href="./vivado_bitstream.html"><code>vivado_device_image</code></a> — emit a Versal <code>.pdi</code>
+from a routing checkpoint.</li>
+<li><a href="./vivado_hw_platform.html"><code>vivado_hw_platform</code></a> — emit the <code>.xsa</code>
+hardware platform for Vitis / PetaLinux from a routing checkpoint.</li>
+<li><a href="./vivado_debug_probes.html"><code>vivado_debug_probes</code></a> — emit the <code>.ltx</code>
+probe file for Hardware Manager from any phase checkpoint.</li>
+</ul>
+<h3 id="how-the-chain-connects"><a class="header" href="#how-the-chain-connects">How the chain connects</a></h3>
 <pre class="mermaid">flowchart TD
     PRJ[&quot;vivado_project&lt;br/&gt;&lt;i&gt;emits .project.tcl, runs no Vivado&lt;/i&gt;&quot;]
     SYN[&quot;vivado_synthesis&lt;br/&gt;&lt;i&gt;synth_design, .dcp + impl-XDC bundle&lt;/i&gt;&quot;]
@@ -538,6 +580,24 @@ session before and after the phase's main command.</p>
 <p>IP enters a project in two shapes. <code>VivadoIPBlockInfo</code> describes a repo
 plus, optionally, a configured <code>.xci</code> or a VLNV to <code>create_ip</code>;
 <code>VivadoBlockDesignInfo</code> describes a <code>.bd</code> and the IP repos it needs.</p>
+<ul>
+<li><a href="./vivado_ip.html"><code>vivado_xci</code></a> — configure a Xilinx-catalog IP from a
+<code>tcl_binary</code> script into a consumable IP repo. Besides
+<code>VivadoIPBlockInfo</code> it exposes <code>VerilogInfo</code> and <code>VhdlInfo</code>, so it
+can also sit in a <code>verilog_library</code>'s <code>deps</code> (dashed edge below).</li>
+<li><a href="./vivado_ip.html"><code>vivado_ip_core</code></a> — package your own HDL module as a
+reusable Vivado IP core.</li>
+<li><a href="./vivado_ip.html"><code>vivado_interface_definition</code></a> — turn a
+SystemVerilog <code>interface</code> into IP-XACT bus and abstraction
+definitions.</li>
+<li><a href="./vivado_ip.html"><code>vivado_interface_ip</code></a> — register an interface
+definition as an IP catalog entry so block designs can connect to it.</li>
+<li><a href="./vivado_packaged_ip.html"><code>vivado_packaged_ip</code></a> — stage an
+already-packaged IP repo for <code>ip_blocks</code>.</li>
+<li><a href="./vivado_block_design.html"><code>vivado_block_design</code></a> — build a <code>.bd</code> from
+a <code>tcl_binary</code> script for <code>vivado_project.block_designs</code>, forwarding
+the IP repos its cells reference.</li>
+</ul>
 <pre class="mermaid">flowchart LR
     SV[&quot;SystemVerilog&lt;br/&gt;interface .sv&quot;]
     IFD[vivado_interface_definition]
@@ -565,22 +625,25 @@ plus, optionally, a configured <code>.xci</code> or a VLNV to <code>create_ip</c
     BD -- &quot;block_designs&lt;br/&gt;VivadoBlockDesignInfo&quot; --&gt; PRJ
     XCI -. &quot;deps&lt;br/&gt;VerilogInfo / VhdlInfo&quot; .-&gt; VL
 </pre>
-<ul>
-<li><code>vivado_xci</code> configures a Xilinx-catalog IP from a <code>tcl_binary</code> script.
-Besides <code>VivadoIPBlockInfo</code> it exposes <code>VerilogInfo</code> and <code>VhdlInfo</code>, so
-it can also sit in a <code>verilog_library</code>'s <code>deps</code> (dashed edge).</li>
-<li><code>vivado_ip_core</code> packages your own HDL as a reusable IP core.</li>
-<li><code>vivado_interface_definition</code> turns a SystemVerilog <code>interface</code> into
-IP-XACT bus and abstraction definitions; <code>vivado_interface_ip</code>
-registers them as a catalog entry so block designs can connect to it.</li>
-<li><code>vivado_packaged_ip</code> stages an already-packaged IP repo.</li>
-<li><code>vivado_block_design</code> builds a <code>.bd</code> from a <code>tcl_binary</code> script and
-forwards the IP repos its cells reference.</li>
-</ul>
 <p>Any of these can contribute <code>project_hooks</code>: Tcl sourced inside every
 downstream <code>vivado_project</code> that folds the target in, right after
 <code>create_project</code>.</p>
 <h2 id="simulation-and-export"><a class="header" href="#simulation-and-export">Simulation and export</a></h2>
+<ul>
+<li><a href="./vivado_simulation.html"><code>vivado_xsim_test</code></a> — export an xsim bundle
+at build time and run it as a Bazel <code>test</code> target, scanning the log
+for error and completion patterns.</li>
+<li><a href="./vivado_simulation.html"><code>vivado_export_simulation</code></a> — run
+<code>export_simulation</code> for any simulator Vivado supports and stage the
+bundle, stopping there.</li>
+<li><a href="./vivado_simulation.html"><code>vivado_compile_simlib</code></a> — pre-compile
+<code>unisim</code>, <code>secureip</code> and friends for a third-party simulator.</li>
+<li><a href="./vivado_project_export.html"><code>vivado_project_export</code></a> — open the
+project, source a user <code>tcl_binary</code>, and capture whatever files or
+directories that script writes. Listed under
+<a href="rules.html#project-setup">Project setup</a> too, since it is the general escape
+hatch rather than a simulation rule.</li>
+</ul>
 <pre class="mermaid">flowchart LR
     PRJ[vivado_project]
     XSIM[&quot;vivado_xsim_test&lt;br/&gt;&lt;i&gt;bazel test&lt;/i&gt;&quot;]
@@ -595,84 +658,6 @@ downstream <code>vivado_project</code> that folds the target in, right after
     EXS -- VivadoExportSimulationInfo --&gt; EXT
     SIMLIB -- VivadoCompiledSimlibInfo --&gt; EXT
 </pre>
-<ul>
-<li><code>vivado_xsim_test</code> exports an xsim bundle at build time and runs it as
-a Bazel test, scanning the log for error and completion patterns.</li>
-<li><code>vivado_export_simulation</code> produces the same kind of bundle for any
-simulator Vivado's <code>export_simulation</code> supports and stops there.</li>
-<li><code>vivado_project_export</code> opens the project, sources a user <code>tcl_binary</code>,
-and captures whatever files or directories that script writes.</li>
-<li><code>vivado_compile_simlib</code> pre-compiles <code>unisim</code>, <code>secureip</code> and friends
-for a third-party simulator.</li>
-</ul>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="rules-1"><a class="header" href="#rules-1">Rules</a></h1>
-<p>Every public rule in <code>rules_vivado</code>, grouped by the build phase it
-belongs to. All of them resolve their Xilinx install through a
-registered <a href="./toolchains.html"><code>vivado_toolchain</code></a>. See
-<a href="./flow.html">Rule flow</a> for how they connect.</p>
-<h2 id="project-setup"><a class="header" href="#project-setup">Project setup</a></h2>
-<ul>
-<li><a href="./vivado_project.html"><code>vivado_project</code></a> — emit a TCL script that
-creates a Vivado project (no Vivado invocation at build time).
-Consumed by <code>vivado_synthesis</code>, the simulation rules,
-<code>vivado_project_export</code>, and GUI launchers.</li>
-<li><a href="./vivado_xdc_library.html"><code>xdc_library</code></a> — bundle constraint files
-with the constraint files they must run after; drops into
-<code>vivado_project.data</code>.</li>
-<li><a href="./vivado_project_export.html"><code>vivado_project_export</code></a> — open the
-project, source a user <code>tcl_binary</code>, and capture the files it writes.</li>
-</ul>
-<h2 id="synthesis"><a class="header" href="#synthesis">Synthesis</a></h2>
-<ul>
-<li><a href="./vivado_synthesis.html"><code>vivado_synthesis</code></a> — run synthesis on a
-<code>vivado_project</code> and produce a synthesis checkpoint (<code>.dcp</code>).</li>
-<li><a href="./vivado_synthesis.html"><code>vivado_synthesis_optimize</code></a> — post-synthesis
-optimization pass on a synthesis checkpoint.</li>
-</ul>
-<h2 id="implementation"><a class="header" href="#implementation">Implementation</a></h2>
-<ul>
-<li><a href="./vivado_implementation.html"><code>vivado_placement</code></a> — placement on a
-synthesis checkpoint.</li>
-<li><a href="./vivado_implementation.html"><code>vivado_place_optimize</code></a> —
-post-placement optimization on a placement checkpoint.</li>
-<li><a href="./vivado_implementation.html"><code>vivado_routing</code></a> — routing on a
-placement checkpoint.</li>
-</ul>
-<h2 id="hand-off-artifacts"><a class="header" href="#hand-off-artifacts">Hand-off artifacts</a></h2>
-<ul>
-<li><a href="./vivado_bitstream.html"><code>vivado_bitstream</code></a> — emit the final <code>.bit</code>
-from a routing checkpoint.</li>
-<li><a href="./vivado_bitstream.html"><code>vivado_device_image</code></a> — emit a Versal <code>.pdi</code>
-from a routing checkpoint.</li>
-<li><a href="./vivado_hw_platform.html"><code>vivado_hw_platform</code></a> — emit the <code>.xsa</code>
-hardware platform for Vitis / PetaLinux from a routing checkpoint.</li>
-<li><a href="./vivado_debug_probes.html"><code>vivado_debug_probes</code></a> — emit the <code>.ltx</code>
-probe file for Hardware Manager from any phase checkpoint.</li>
-</ul>
-<h2 id="ip-composition-1"><a class="header" href="#ip-composition-1">IP composition</a></h2>
-<ul>
-<li><a href="./vivado_ip.html"><code>vivado_xci</code></a> — configure a Xilinx-catalog IP from a
-Tcl script into a consumable IP repo.</li>
-<li><a href="./vivado_ip.html"><code>vivado_ip_core</code></a> — package an HDL module as a
-Vivado IP core.</li>
-<li><a href="./vivado_ip.html"><code>vivado_interface_definition</code></a> — generate IP-XACT
-bus + abstraction definitions from a SystemVerilog interface.</li>
-<li><a href="./vivado_ip.html"><code>vivado_interface_ip</code></a> — register an interface
-definition as an IP catalog entry so block designs can use it.</li>
-<li><a href="./vivado_packaged_ip.html"><code>vivado_packaged_ip</code></a> — stage an
-already-packaged IP repo for <code>ip_blocks</code>.</li>
-<li><a href="./vivado_block_design.html"><code>vivado_block_design</code></a> — build a <code>.bd</code> from
-a Tcl script for <code>vivado_project.block_designs</code>.</li>
-</ul>
-<h2 id="simulation"><a class="header" href="#simulation">Simulation</a></h2>
-<ul>
-<li><a href="./vivado_simulation.html"><code>vivado_xsim_test</code></a> — run a Vivado XSim
-simulation as a Bazel <code>test</code> target.</li>
-<li><a href="./vivado_simulation.html"><code>vivado_export_simulation</code></a> — run
-<code>export_simulation</code> for any supported simulator and stage the bundle.</li>
-<li><a href="./vivado_simulation.html"><code>vivado_compile_simlib</code></a> — pre-compile the
-Xilinx simulation libraries for a third-party simulator.</li>
-</ul>
 <h2 id="toolchain"><a class="header" href="#toolchain">Toolchain</a></h2>
 <ul>
 <li><a href="./vivado_toolchain.html"><code>vivado_toolchain</code></a> — declare a Vivado
