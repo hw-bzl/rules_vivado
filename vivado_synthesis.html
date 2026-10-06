@@ -156,57 +156,62 @@
                 <div id="content" class="content">
                     <main>
                         <!-- Generated with Stardoc: http://skydoc.bazel.build -->
-<h1 id="synthesis-phase-rules-vivado_synthesize-and-vivado_synthesis_optimize"><a class="header" href="#synthesis-phase-rules-vivado_synthesize-and-vivado_synthesis_optimize">Synthesis-phase rules: vivado_synthesize and vivado_synthesis_optimize.</a></h1>
+<h1 id="synthesis-phase-rules-vivado_synthesis-and-vivado_synthesis_optimize"><a class="header" href="#synthesis-phase-rules-vivado_synthesis-and-vivado_synthesis_optimize">Synthesis-phase rules: vivado_synthesis and vivado_synthesis_optimize.</a></h1>
 <h2 id="rules"><a class="header" href="#rules">Rules</a></h2>
 <ul>
+<li><a href="#vivado_synthesis">vivado_synthesis</a></li>
 <li><a href="#vivado_synthesis_optimize">vivado_synthesis_optimize</a></li>
-<li><a href="#vivado_synthesize">vivado_synthesize</a></li>
 </ul>
+<p><a id="vivado_synthesis"></a></p>
+<h2 id="vivado_synthesis"><a class="header" href="#vivado_synthesis">vivado_synthesis</a></h2>
+<pre>
+load("@rules_vivado//vivado:synthesis.bzl", "vivado_synthesis")
+
+vivado_synthesis(<a href="#vivado_synthesis-name">name</a>, <a href="#vivado_synthesis-jobs">jobs</a>, <a href="#vivado_synthesis-post_hooks">post_hooks</a>, <a href="#vivado_synthesis-pre_hooks">pre_hooks</a>, <a href="#vivado_synthesis-project">project</a>, <a href="#vivado_synthesis-project_mode">project_mode</a>, <a href="#vivado_synthesis-reports">reports</a>, <a href="#vivado_synthesis-synth_args">synth_args</a>,
+                 <a href="#vivado_synthesis-synth_invocation">synth_invocation</a>, <a href="#vivado_synthesis-synth_strategy">synth_strategy</a>, <a href="#vivado_synthesis-synthesis_tcl_template">synthesis_tcl_template</a>)
+</pre>
+<p>Run synthesis on a <code>vivado_project</code>. Sources the project's emitted TCL script inside a single Vivado action, generates IP / BD targets (global synthesis — no OOC runs), runs the top synth (<code>launch_runs</code> or <code>synth_design</code>), and writes a <code>.dcp</code> checkpoint + impl-XDC bundle for downstream implementation phases.</p>
+<p><strong>ATTRIBUTES</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="vivado_synthesis-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_synthesis-jobs"></a>jobs</td><td style="text-align: left">Jobs to pass to vivado which defines the amount of parallelism.</td><td style="text-align: left">Integer</td><td style="text-align: left">optional</td><td style="text-align: left"><code>4</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_synthesis-post_hooks"></a>post_hooks</td><td style="text-align: left"><code>.tcl</code>/<code>.xdc</code>/<code>.sdc</code> files OR <code>tcl_binary</code> targets sourced on the open synthesized design (after <code>open_run "synth_1"</code>), before checkpoint write and reports. Sourced in list order.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_synthesis-pre_hooks"></a>pre_hooks</td><td style="text-align: left"><code>.tcl</code>/<code>.xdc</code>/<code>.sdc</code> files OR <code>tcl_binary</code> targets sourced after the project script finishes (post <code>generate_target</code>) but before synth runs are launched. Sourced in list order.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_synthesis-project"></a>project</td><td style="text-align: left"><code>vivado_project</code> target carrying the emitted project TCL script + its transitive input closure. All project-shape attrs (module, module_top, part_number, block_designs, ip_blocks, pre_hooks_early, etc.) live on that target, not here.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_synthesis-project_mode"></a>project_mode</td><td style="text-align: left">How Vivado stores project state. <code>project</code> creates a named on-disk project so managed-run infrastructure (<code>launch_runs</code>, <code>synth_1</code>) is available. <code>in_memory</code> calls <code>create_project -in_memory</code>; managed runs are unavailable, so <code>synth_invocation = launch_runs</code> requires <code>project</code>. The two modes can produce different netlist hierarchies for block-design-instantiated IPs, affecting downstream physical constraints that target IP-internal cells/nets.</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>"project"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_synthesis-reports"></a>reports</td><td style="text-align: left">Report types to run after <code>synth_design</code>, before checkpoint write. Each entry must be a key in <code>REPORT_TYPES</code> (<code>vivado/private/common.bzl</code>). Reports live at <code>&lt;target&gt;.reports/&lt;filename&gt;</code> and are wrapped in <code>catch</code> so a single failure writes an empty file rather than aborting. Pass <code>reports = []</code> to disable.</td><td style="text-align: left">List of strings</td><td style="text-align: left">optional</td><td style="text-align: left"><code>["timing_summary", "utilization"]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_synthesis-synth_args"></a>synth_args</td><td style="text-align: left">Extra flags for <code>synth_design</code> in the <code>synth_design</code> invocation path. Cannot contain <code>-top</code> (the rule emits that from the project's <code>module_top</code>). Not consulted on the <code>launch_runs</code> path; there, set <code>STEPS.SYNTH_DESIGN.ARGS.*</code> run properties from a <code>pre_hooks</code> script.</td><td style="text-align: left">List of strings</td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_synthesis-synth_invocation"></a>synth_invocation</td><td style="text-align: left">How <code>synth_design</code> is invoked. <code>launch_runs</code> wraps it in a managed <code>synth_1</code> design-run (fresh Vivado process re-loads project state from disk). <code>synth_design</code> invokes it in the same process. Multi-config XCI consumer instantiations require <code>synth_design</code>: in <code>launch_runs</code> the re-loading process binds consumer wrappers to the IP's project-managed synth wrapper (which doesn't propagate consumer-side generics), so wrappers passing distinct generic combinations surface as <code>__parameterized&lt;N&gt;</code> black boxes.</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>"launch_runs"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_synthesis-synth_strategy"></a>synth_strategy</td><td style="text-align: left">The synthesis strategy to use.</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>"Vivado Synthesis Defaults"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_synthesis-synthesis_tcl_template"></a>synthesis_tcl_template</td><td style="text-align: left">The synthesis tcl template.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:synthesis.tcl.template"</code></td></tr>
+</tbody></table>
+</div>
 <p><a id="vivado_synthesis_optimize"></a></p>
 <h2 id="vivado_synthesis_optimize"><a class="header" href="#vivado_synthesis_optimize">vivado_synthesis_optimize</a></h2>
 <pre>
 load("@rules_vivado//vivado:synthesis.bzl", "vivado_synthesis_optimize")
 
-vivado_synthesis_optimize(<a href="#vivado_synthesis_optimize-name">name</a>, <a href="#vivado_synthesis_optimize-checkpoint">checkpoint</a>, <a href="#vivado_synthesis_optimize-opt_directive">opt_directive</a>, <a href="#vivado_synthesis_optimize-synthesis_optimize_template">synthesis_optimize_template</a>, <a href="#vivado_synthesis_optimize-threads">threads</a>,
-                          <a href="#vivado_synthesis_optimize-with_probes">with_probes</a>)
+vivado_synthesis_optimize(<a href="#vivado_synthesis_optimize-name">name</a>, <a href="#vivado_synthesis_optimize-checkpoint">checkpoint</a>, <a href="#vivado_synthesis_optimize-opt_args">opt_args</a>, <a href="#vivado_synthesis_optimize-post_hooks">post_hooks</a>, <a href="#vivado_synthesis_optimize-pre_hooks">pre_hooks</a>, <a href="#vivado_synthesis_optimize-reports">reports</a>,
+                          <a href="#vivado_synthesis_optimize-synthesis_optimize_template">synthesis_optimize_template</a>, <a href="#vivado_synthesis_optimize-threads">threads</a>)
 </pre>
 <p>Run post-synthesis optimization on a synthesis checkpoint.</p>
 <p><strong>ATTRIBUTES</strong></p>
 <div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
 <tr><td style="text-align: left"><a id="vivado_synthesis_optimize-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
 <tr><td style="text-align: left"><a id="vivado_synthesis_optimize-checkpoint"></a>checkpoint</td><td style="text-align: left">Synthesis checkpoint.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
-<tr><td style="text-align: left"><a id="vivado_synthesis_optimize-opt_directive"></a>opt_directive</td><td style="text-align: left">The optimization directive.</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>"Explore"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_synthesis_optimize-opt_args"></a>opt_args</td><td style="text-align: left">Extra flags passed through to <code>opt_design</code>.</td><td style="text-align: left">List of strings</td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_synthesis_optimize-post_hooks"></a>post_hooks</td><td style="text-align: left"><code>.tcl</code>/<code>.xdc</code>/<code>.sdc</code> files OR <code>tcl_binary</code> targets sourced after <code>opt_design</code>, before reports and checkpoint write. Sourced in list order.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_synthesis_optimize-pre_hooks"></a>pre_hooks</td><td style="text-align: left"><code>.tcl</code>/<code>.xdc</code>/<code>.sdc</code> files OR <code>tcl_binary</code> targets sourced on the opened synth checkpoint, before <code>opt_design</code>. Sourced in list order.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_synthesis_optimize-reports"></a>reports</td><td style="text-align: left">Report types to run after <code>opt_design</code>; see <code>vivado_synthesis.reports</code>.</td><td style="text-align: left">List of strings</td><td style="text-align: left">optional</td><td style="text-align: left"><code>["drc", "timing_summary", "utilization"]</code></td></tr>
 <tr><td style="text-align: left"><a id="vivado_synthesis_optimize-synthesis_optimize_template"></a>synthesis_optimize_template</td><td style="text-align: left">The synthesis optimization tcl template</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:synth_optimize.tcl.template"</code></td></tr>
 <tr><td style="text-align: left"><a id="vivado_synthesis_optimize-threads"></a>threads</td><td style="text-align: left">Threads to pass to vivado which defines the amount of parallelism.</td><td style="text-align: left">Integer</td><td style="text-align: left">optional</td><td style="text-align: left"><code>8</code></td></tr>
-<tr><td style="text-align: left"><a id="vivado_synthesis_optimize-with_probes"></a>with_probes</td><td style="text-align: left">Create debug probes.</td><td style="text-align: left">Boolean</td><td style="text-align: left">optional</td><td style="text-align: left"><code>False</code></td></tr>
-</tbody></table>
-</div>
-<p><a id="vivado_synthesize"></a></p>
-<h2 id="vivado_synthesize"><a class="header" href="#vivado_synthesize">vivado_synthesize</a></h2>
-<pre>
-load("@rules_vivado//vivado:synthesis.bzl", "vivado_synthesize")
-
-vivado_synthesize(<a href="#vivado_synthesize-name">name</a>, <a href="#vivado_synthesize-create_project_tcl_template">create_project_tcl_template</a>, <a href="#vivado_synthesize-ip_blocks">ip_blocks</a>, <a href="#vivado_synthesize-jobs">jobs</a>, <a href="#vivado_synthesize-module">module</a>, <a href="#vivado_synthesize-module_top">module_top</a>,
-                  <a href="#vivado_synthesize-part_number">part_number</a>, <a href="#vivado_synthesize-synth_strategy">synth_strategy</a>)
-</pre>
-<p>Create a Vivado project and run synthesis on it.</p>
-<p><strong>ATTRIBUTES</strong></p>
-<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
-<tr><td style="text-align: left"><a id="vivado_synthesize-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
-<tr><td style="text-align: left"><a id="vivado_synthesize-create_project_tcl_template"></a>create_project_tcl_template</td><td style="text-align: left">The create project tcl template</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:create_project.tcl.template"</code></td></tr>
-<tr><td style="text-align: left"><a id="vivado_synthesize-ip_blocks"></a>ip_blocks</td><td style="text-align: left">Ip blocks to include in this design.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
-<tr><td style="text-align: left"><a id="vivado_synthesize-jobs"></a>jobs</td><td style="text-align: left">Jobs to pass to vivado which defines the amount of parallelism.</td><td style="text-align: left">Integer</td><td style="text-align: left">optional</td><td style="text-align: left"><code>4</code></td></tr>
-<tr><td style="text-align: left"><a id="vivado_synthesize-module"></a>module</td><td style="text-align: left">The top level build.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
-<tr><td style="text-align: left"><a id="vivado_synthesize-module_top"></a>module_top</td><td style="text-align: left">The name of the top level verilog module.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
-<tr><td style="text-align: left"><a id="vivado_synthesize-part_number"></a>part_number</td><td style="text-align: left">The targeted xilinx part.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
-<tr><td style="text-align: left"><a id="vivado_synthesize-synth_strategy"></a>synth_strategy</td><td style="text-align: left">The synthesis strategy to use.</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>"Vivado Synthesis Defaults"</code></td></tr>
 </tbody></table>
 </div>
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="vivado_project.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="vivado_project_export.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
@@ -220,7 +225,7 @@ vivado_synthesize(<a href="#vivado_synthesize-name">name</a>, <a href="#vivado_s
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="vivado_project.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="vivado_project_export.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
@@ -248,6 +253,8 @@ vivado_synthesize(<a href="#vivado_synthesize-name">name</a>, <a href="#vivado_s
         <script src="book.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="mermaid.min.js"></script>
+        <script src="mermaid-init.js"></script>
 
 
     </div>

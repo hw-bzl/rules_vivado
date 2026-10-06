@@ -156,35 +156,116 @@
                 <div id="content" class="content">
                     <main>
                         <!-- Generated with Stardoc: http://skydoc.bazel.build -->
-<h1 id="simulation-rule-xsim_test"><a class="header" href="#simulation-rule-xsim_test">Simulation rule: xsim_test.</a></h1>
+<h1 id="simulation-rules"><a class="header" href="#simulation-rules">Simulation rules</a></h1>
 <h2 id="rules"><a class="header" href="#rules">Rules</a></h2>
 <ul>
-<li><a href="#xsim_test">xsim_test</a></li>
+<li><a href="#vivado_compile_simlib">vivado_compile_simlib</a></li>
+<li><a href="#vivado_export_simulation">vivado_export_simulation</a></li>
+<li><a href="#vivado_xsim_test">vivado_xsim_test</a></li>
 </ul>
-<p><a id="xsim_test"></a></p>
-<h2 id="xsim_test"><a class="header" href="#xsim_test">xsim_test</a></h2>
+<p><a id="vivado_compile_simlib"></a></p>
+<h2 id="vivado_compile_simlib"><a class="header" href="#vivado_compile_simlib">vivado_compile_simlib</a></h2>
 <pre>
-load("@rules_vivado//vivado:simulation.bzl", "xsim_test")
+load("@rules_vivado//vivado:simulation.bzl", "vivado_compile_simlib")
 
-xsim_test(<a href="#xsim_test-name">name</a>, <a href="#xsim_test-ip_blocks">ip_blocks</a>, <a href="#xsim_test-module">module</a>, <a href="#xsim_test-module_top">module_top</a>, <a href="#xsim_test-part_number">part_number</a>, <a href="#xsim_test-with_waveform">with_waveform</a>, <a href="#xsim_test-xsim_test_template">xsim_test_template</a>)
+vivado_compile_simlib(<a href="#vivado_compile_simlib-name">name</a>, <a href="#vivado_compile_simlib-compile_simlib_template">compile_simlib_template</a>, <a href="#vivado_compile_simlib-family">family</a>, <a href="#vivado_compile_simlib-language">language</a>, <a href="#vivado_compile_simlib-library">library</a>,
+                      <a href="#vivado_compile_simlib-license_resource_count">license_resource_count</a>, <a href="#vivado_compile_simlib-license_resource_name">license_resource_name</a>, <a href="#vivado_compile_simlib-no_ip_compile">no_ip_compile</a>,
+                      <a href="#vivado_compile_simlib-no_systemc_compile">no_systemc_compile</a>, <a href="#vivado_compile_simlib-simulator">simulator</a>)
 </pre>
-<p>Run a Vivado xsim simulation as a Bazel test.</p>
+<p>Pre-compile the Xilinx baseline simulation libraries (<code>unisim</code>,
+<code>unimacro</code>, <code>secureip</code>, <code>unifast</code>, ...) for a third-party simulator. Output is
+a TreeArtifact at the layout <code>compile_simlib -directory &lt;dir&gt;</code> produces.</p>
+<p><code>compile_simlib</code> is hours of work for <code>-family all</code>; pass a specific silicon
+family to bound the scope. The simulator install is located via an env-var
+lookup on the exec platform (<code>$RIVIERA_HOME</code> for riviera, etc.) because
+<code>compile_simlib</code> shells out to vsimsa AND its peer tools.</p>
 <p><strong>ATTRIBUTES</strong></p>
 <div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
-<tr><td style="text-align: left"><a id="xsim_test-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
-<tr><td style="text-align: left"><a id="xsim_test-ip_blocks"></a>ip_blocks</td><td style="text-align: left">Ip blocks to include in this design.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
-<tr><td style="text-align: left"><a id="xsim_test-module"></a>module</td><td style="text-align: left">The top level build.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
-<tr><td style="text-align: left"><a id="xsim_test-module_top"></a>module_top</td><td style="text-align: left">The name of the top level verilog module.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
-<tr><td style="text-align: left"><a id="xsim_test-part_number"></a>part_number</td><td style="text-align: left">The targeted xilinx part.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
-<tr><td style="text-align: left"><a id="xsim_test-with_waveform"></a>with_waveform</td><td style="text-align: left">Generate with a waveform</td><td style="text-align: left">Boolean</td><td style="text-align: left">optional</td><td style="text-align: left"><code>False</code></td></tr>
-<tr><td style="text-align: left"><a id="xsim_test-xsim_test_template"></a>xsim_test_template</td><td style="text-align: left">The tcl template to run on vivado.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:xsim_test.tcl.template"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_compile_simlib-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_compile_simlib-compile_simlib_template"></a>compile_simlib_template</td><td style="text-align: left">The tcl template that drives <code>compile_simlib</code>.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:compile_simlib.tcl.template"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_compile_simlib-family"></a>family</td><td style="text-align: left">Xilinx silicon family, passed to <code>compile_simlib -family &lt;X&gt;</code>. Common values: <code>all</code> (hours), <code>versal</code>, <code>kintexuplus</code>, <code>zynquplus</code>.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_compile_simlib-language"></a>language</td><td style="text-align: left">HDL language, passed to <code>compile_simlib -language &lt;X&gt;</code>.</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>"all"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_compile_simlib-library"></a>library</td><td style="text-align: left">Simulation library set, passed to <code>compile_simlib -library &lt;X&gt;</code>. For families whose <code>all</code> set omits a needed library, compile that library in a second target with <code>no_ip_compile = True</code> and chain via <code>vmap -link</code> at consume time.</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>"all"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_compile_simlib-license_resource_count"></a>license_resource_count</td><td style="text-align: left">Number of <code>license_resource_name</code> units to claim. Values &lt;= 0 fall back to 1 when a resource name is set.</td><td style="text-align: left">Integer</td><td style="text-align: left">optional</td><td style="text-align: left"><code>0</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_compile_simlib-license_resource_name"></a>license_resource_name</td><td style="text-align: left">FlexLM feature name to claim from Bazel's local resource pool. Callers wire the pool via <code>--local_extra_resources=&lt;name&gt;=N</code>. Overrides the built-in default map (activehdl, riviera). Empty falls back to that map.</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>""</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_compile_simlib-no_ip_compile"></a>no_ip_compile</td><td style="text-align: left">Pass <code>-no_ip_compile</code>. Required on chained follow-up targets: Vivado rewrites <code>library.cfg</code> on each <code>compile_simlib</code>, so a later call's IP compile pass errors with <code>Library "&lt;baseline&gt;" not found</code> because the fresh <code>library.cfg</code> lacks the baseline mappings the IPs reference.</td><td style="text-align: left">Boolean</td><td style="text-align: left">optional</td><td style="text-align: left"><code>False</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_compile_simlib-no_systemc_compile"></a>no_systemc_compile</td><td style="text-align: left">Pass <code>-no_systemc_compile</code> (default true). The SystemC libs require a working SystemC install reachable by the simulator's C++ toolchain, which often isn't present in CI images.</td><td style="text-align: left">Boolean</td><td style="text-align: left">optional</td><td style="text-align: left"><code>True</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_compile_simlib-simulator"></a>simulator</td><td style="text-align: left">Target simulator. <code>xsim</code> is built into Vivado and doesn't need precompile.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+</tbody></table>
+</div>
+<p><a id="vivado_export_simulation"></a></p>
+<h2 id="vivado_export_simulation"><a class="header" href="#vivado_export_simulation">vivado_export_simulation</a></h2>
+<pre>
+load("@rules_vivado//vivado:simulation.bzl", "vivado_export_simulation")
+
+vivado_export_simulation(<a href="#vivado_export_simulation-name">name</a>, <a href="#vivado_export_simulation-export_simulation_template">export_simulation_template</a>, <a href="#vivado_export_simulation-module_top">module_top</a>, <a href="#vivado_export_simulation-post_hook_tools">post_hook_tools</a>, <a href="#vivado_export_simulation-post_hooks">post_hooks</a>,
+                         <a href="#vivado_export_simulation-pre_hook_tools">pre_hook_tools</a>, <a href="#vivado_export_simulation-pre_hooks">pre_hooks</a>, <a href="#vivado_export_simulation-project">project</a>, <a href="#vivado_export_simulation-simulator">simulator</a>)
+</pre>
+<p>Run Vivado's <code>export_simulation</code> over a <code>vivado_project</code> and
+stage the resulting directory as a TreeArtifact. The downstream
+simulator is not run; consumers compose against <code>VivadoExportSimulationInfo</code>.</p>
+<p>The exported <code>compile.sh</code> / <code>elaborate.sh</code> / <code>simulate.sh</code> scripts are
+path-sanitized like every other output: absolute paths become
+<code>&lt;execroot&gt;/</code> so the tree stays cacheable across hosts and RBE workers.
+The bundle is therefore not runnable straight out of <code>bazel-bin</code> — a
+consumer re-points the marker at its own root first (<code>sed -i "s|&lt;execroot&gt;/|$PWD/|g"</code>). See <code>vivado_toolchain(sanitizer = ...)</code>.</p>
+<p><strong>ATTRIBUTES</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="vivado_export_simulation-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_export_simulation-export_simulation_template"></a>export_simulation_template</td><td style="text-align: left">The tcl template that drives <code>export_simulation</code>.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:export_simulation.tcl.template"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_export_simulation-module_top"></a>module_top</td><td style="text-align: left">Simulation-fileset top module. Typically the testbench name, or <code>&lt;bd&gt;_wrapper</code> for a BD-only sim.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_export_simulation-post_hook_tools"></a>post_hook_tools</td><td style="text-align: left">Executable targets invoked in the same Bazel action AFTER Vivado exits. Each receives <code>--project-dir &lt;path&gt; --export-dir &lt;path&gt;</code> and the same paths via <code>VIVADO_PROJECT_DIR</code> / <code>VIVADO_EXPORT_DIR</code> env vars. Order is preserved; first non-zero exit fails the action.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_export_simulation-post_hooks"></a>post_hooks</td><td style="text-align: left"><code>.tcl</code> files OR <code>tcl_binary</code> targets sourced inside Vivado at the end of the export body, with the project still open. Sourced in list order.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_export_simulation-pre_hook_tools"></a>pre_hook_tools</td><td style="text-align: left">Executable targets invoked BEFORE Vivado starts; see <code>post_hook_tools</code>.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_export_simulation-pre_hooks"></a>pre_hooks</td><td style="text-align: left"><code>.tcl</code> files OR <code>tcl_binary</code> targets sourced after the project script + sim elaboration, before <code>export_simulation</code> runs. Sourced in list order.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_export_simulation-project"></a>project</td><td style="text-align: left"><code>vivado_project</code> target carrying the emitted project TCL script + its transitive input closure. All project-shape attrs (module, part_number, block_designs, ip_blocks, pre_hooks_early, etc.) live on that target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_export_simulation-simulator"></a>simulator</td><td style="text-align: left">Target simulator for the export.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+</tbody></table>
+</div>
+<p><a id="vivado_xsim_test"></a></p>
+<h2 id="vivado_xsim_test"><a class="header" href="#vivado_xsim_test">vivado_xsim_test</a></h2>
+<pre>
+load("@rules_vivado//vivado:simulation.bzl", "vivado_xsim_test")
+
+vivado_xsim_test(<a href="#vivado_xsim_test-name">name</a>, <a href="#vivado_xsim_test-completion_pattern">completion_pattern</a>, <a href="#vivado_xsim_test-error_patterns">error_patterns</a>, <a href="#vivado_xsim_test-export_simulation_template">export_simulation_template</a>, <a href="#vivado_xsim_test-module_top">module_top</a>,
+                 <a href="#vivado_xsim_test-post_hook_tools">post_hook_tools</a>, <a href="#vivado_xsim_test-post_hooks">post_hooks</a>, <a href="#vivado_xsim_test-pre_hook_tools">pre_hook_tools</a>, <a href="#vivado_xsim_test-pre_hooks">pre_hooks</a>, <a href="#vivado_xsim_test-project">project</a>, <a href="#vivado_xsim_test-with_waveform">with_waveform</a>,
+                 <a href="#vivado_xsim_test-xsim_test_wrapper_template">xsim_test_wrapper_template</a>)
+</pre>
+<p>Run a Vivado xsim simulation as a Bazel test.</p>
+<p>A build action sources the <code>vivado_project</code>-emitted project TCL,
+generates simulation targets on any BDs, and calls <code>export_simulation</code>
+to produce a self-contained xsim script bundle; the test binary runs
+<code>simulate.sh</code> at test time. Log-scan patterns catch <code>$error</code> output,
+which xsim prints but doesn't exit nonzero for. The wrapper writes a
+JUnit XML at <code>$XML_OUTPUT_FILE</code> and copies the sim log, per-tool logs,
+and any <code>.wdb</code> waveform into <code>$TEST_UNDECLARED_OUTPUTS_DIR</code>.</p>
+<p>At test time the wrapper re-points the bundle's sanitized <code>&lt;execroot&gt;/</code>
+paths at its runfiles, then needs <code>xvlog</code> / <code>xelab</code> / <code>xsim</code> on <code>PATH</code>.
+Bazel hands tests a minimal <code>PATH</code>, so supply them through the
+toolchain's <code>xilinx_env</code> script (sourced by the wrapper) or an
+<code>env = {"PATH": ...}</code> entry; failing both, the wrapper boots the
+toolchain's <code>vivado</code> shim once to discover the install's <code>bin</code> dir.</p>
+<p><strong>ATTRIBUTES</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="vivado_xsim_test-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_xsim_test-completion_pattern"></a>completion_pattern</td><td style="text-align: left">ERE pattern the simulation log must match for the test to pass. Set to <code>""</code> to disable. Only consulted when the driver script exited 0.</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>"\\$finish"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_xsim_test-error_patterns"></a>error_patterns</td><td style="text-align: left">ERE patterns that mark the simulation log as failed. Joined with <code>|</code> and passed to <code>grep -E</code>. Pass <code>[]</code> to disable log scanning.</td><td style="text-align: left">List of strings</td><td style="text-align: left">optional</td><td style="text-align: left"><code>["^Error: ", "^ERROR:", "FATAL_ERROR", "\\$fatal"]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_xsim_test-export_simulation_template"></a>export_simulation_template</td><td style="text-align: left">The tcl template that drives <code>export_simulation</code>.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:export_simulation.tcl.template"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_xsim_test-module_top"></a>module_top</td><td style="text-align: left">Simulation-fileset top module. Typically the testbench name, or <code>&lt;bd&gt;_wrapper</code> for a BD-only sim.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_xsim_test-post_hook_tools"></a>post_hook_tools</td><td style="text-align: left">Executable targets invoked in the same Bazel action AFTER Vivado exits. Each receives <code>--project-dir &lt;path&gt; --export-dir &lt;path&gt;</code> and the same paths via <code>VIVADO_PROJECT_DIR</code> / <code>VIVADO_EXPORT_DIR</code> env vars. Order is preserved; first non-zero exit fails the action.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_xsim_test-post_hooks"></a>post_hooks</td><td style="text-align: left"><code>.tcl</code> files OR <code>tcl_binary</code> targets sourced after <code>export_simulation</code> completes, with the project still open. Sourced in list order.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_xsim_test-pre_hook_tools"></a>pre_hook_tools</td><td style="text-align: left">Executable targets invoked BEFORE Vivado starts; see <code>post_hook_tools</code>.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_xsim_test-pre_hooks"></a>pre_hooks</td><td style="text-align: left"><code>.tcl</code> files OR <code>tcl_binary</code> targets sourced after the project script + sim elaboration, before <code>export_simulation</code> runs. Sourced in list order.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_xsim_test-project"></a>project</td><td style="text-align: left"><code>vivado_project</code> target carrying the emitted project TCL script + its transitive input closure. All project-shape attrs (module, part_number, block_designs, ip_blocks, pre_hooks_early, etc.) live on that target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_xsim_test-with_waveform"></a>with_waveform</td><td style="text-align: left">Only <code>False</code> is accepted; <code>True</code> fails at analysis. To capture waveforms, add a <code>pre_hooks</code> Tcl script that sets <code>xsim.simulate.log_all_signals</code> on the sim fileset.</td><td style="text-align: left">Boolean</td><td style="text-align: left">optional</td><td style="text-align: left"><code>False</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_xsim_test-xsim_test_wrapper_template"></a>xsim_test_wrapper_template</td><td style="text-align: left">Bash template driving the exported <code>simulate.sh</code> at test time.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:xsim_test_wrapper.sh.template"</code></td></tr>
 </tbody></table>
 </div>
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="vivado_ip.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="vivado_xdc_library.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
@@ -198,7 +279,7 @@ xsim_test(<a href="#xsim_test-name">name</a>, <a href="#xsim_test-ip_blocks">ip_
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="vivado_ip.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="vivado_xdc_library.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
@@ -226,6 +307,8 @@ xsim_test(<a href="#xsim_test-name">name</a>, <a href="#xsim_test-ip_blocks">ip_
         <script src="book.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="mermaid.min.js"></script>
+        <script src="mermaid-init.js"></script>
 
 
     </div>

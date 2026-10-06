@@ -166,21 +166,24 @@ and test rules. HDL sources flow in through
 <a href="https://registry.bazel.build/modules/rules_vhdl"><code>rules_vhdl</code></a>
 (<code>VhdlInfo</code>); the same <code>*_library</code> targets can be reused for simulation
 and synthesis. The build phases are each their own rule
-(<a href="./vivado_synthesis.html"><code>vivado_synthesize</code></a>,
+(<a href="./vivado_project.html"><code>vivado_project</code></a> +
+<a href="./vivado_synthesis.html"><code>vivado_synthesis</code></a>,
 <a href="./vivado_implementation.html"><code>vivado_placement</code></a>,
 <a href="./vivado_implementation.html"><code>vivado_routing</code></a>,
-<a href="./vivado_bitstream.html"><code>vivado_write_bitstream</code></a>, …) so checkpoints are
-cached between phases, or you can chain the whole flow with the
-<code>vivado_flow</code> macro.</p>
+<a href="./vivado_bitstream.html"><code>vivado_bitstream</code></a>, …) so each phase's
+checkpoint and reports are addressable as their own targets — build
+<code>:my_synth</code> when you only want the synth <code>.dcp</code>, or <code>:my_bitstream</code>
+for the end-to-end result.</p>
 <p>The Xilinx install itself is resolved via a registered
 <a href="./toolchains.html"><code>vivado_toolchain</code></a> — there is no per-target install
 path to configure once a toolchain is in place.</p>
 <h2 id="quick-start"><a class="header" href="#quick-start">Quick start</a></h2>
 <p>The walkthrough below takes a Verilog top module from source to
-bitstream with the <code>vivado_flow</code> macro.</p>
+bitstream by composing the per-phase rules directly — that's the
+shape the ruleset is designed around.</p>
 <h3 id="modulebazel"><a class="header" href="#modulebazel"><code>MODULE.bazel</code></a></h3>
-<pre><code class="language-python">bazel_dep(name = "rules_verilog", version = "1.1.1")
-bazel_dep(name = "rules_vhdl", version = "0.1.1")
+<pre><code class="language-python">bazel_dep(name = "rules_verilog", version = "1.4.3")
+bazel_dep(name = "rules_vhdl", version = "0.4.1")
 bazel_dep(name = "rules_vivado", version = "{version}")
 
 register_toolchains("//tools/vivado:vivado_toolchain")
@@ -227,7 +230,16 @@ endmodule
 </code></pre>
 <h3 id="hellobuildbazel"><a class="header" href="#hellobuildbazel"><code>hello/BUILD.bazel</code></a></h3>
 <pre><code class="language-python">load("@rules_verilog//verilog:defs.bzl", "verilog_library")
-load("@rules_vivado//vivado:defs.bzl", "vivado_flow")
+load(
+    "@rules_vivado//vivado:defs.bzl",
+    "vivado_place_optimize",
+    "vivado_placement",
+    "vivado_project",
+    "vivado_routing",
+    "vivado_synthesis",
+    "vivado_synthesis_optimize",
+    "vivado_bitstream",
+)
 
 verilog_library(
     name = "hello",
@@ -235,34 +247,66 @@ verilog_library(
     data = ["hello.xdc"],
 )
 
-vivado_flow(
-    name = "hello_bitstream",
+vivado_project(
+    name = "hello_project",
     module = ":hello",
     module_top = "hello",
-    part_number = "xczu28dr-ffvg1517-2-e",
+    part_number = "xc7a35ticsg324-1L",
+)
+
+vivado_synthesis(
+    name = "hello_synth",
+    project = ":hello_project",
+)
+
+vivado_synthesis_optimize(
+    name = "hello_synth_opt",
+    checkpoint = ":hello_synth",
+)
+
+vivado_placement(
+    name = "hello_placement",
+    checkpoint = ":hello_synth_opt",
+)
+
+vivado_place_optimize(
+    name = "hello_place_opt",
+    checkpoint = ":hello_placement",
+)
+
+vivado_routing(
+    name = "hello_route",
+    checkpoint = ":hello_place_opt",
+)
+
+vivado_bitstream(
+    name = "hello_bitstream",
+    checkpoint = ":hello_route",
 )
 </code></pre>
 <h3 id="build-it"><a class="header" href="#build-it">Build it</a></h3>
 <pre><code class="language-text">$ bazel build //hello:hello_bitstream
 $ ls bazel-bin/hello/
-hello_bitstream.bit  hello_bitstream_route.dcp  ...
+hello_bitstream.bit  hello_route.dcp  ...
 </code></pre>
-<p><code>vivado_flow</code> is a convenience macro — it expands to the per-phase
-rules below so each checkpoint is cached on its own:</p>
+<p>Every intermediate target is buildable in isolation:</p>
 <ul>
-<li><code>hello_bitstream_synth</code> — synthesis (<code>.dcp</code>)</li>
-<li><code>hello_bitstream_synth_opt</code> — post-synthesis optimization</li>
-<li><code>hello_bitstream_placement</code> — placement</li>
-<li><code>hello_bitstream_place_opt</code> — post-placement optimization</li>
-<li><code>hello_bitstream_route</code> — routing</li>
-<li><code>hello_bitstream</code> — final <code>.bit</code></li>
+<li><code>:hello_synth</code> — synthesis (<code>.dcp</code>)</li>
+<li><code>:hello_synth_opt</code> — post-synthesis optimization</li>
+<li><code>:hello_placement</code> — placement</li>
+<li><code>:hello_place_opt</code> — post-placement optimization</li>
+<li><code>:hello_route</code> — routing</li>
+<li><code>:hello_bitstream</code> — final <code>.bit</code></li>
 </ul>
-<p>Build any one of them directly to stop the flow early or to inspect
-intermediate reports.</p>
+<p>Build one directly to stop the flow early or to inspect the reports
+that phase writes.</p>
 <h2 id="going-further"><a class="header" href="#going-further">Going further</a></h2>
 <ul>
 <li><a href="./toolchains.html">Toolchains</a> — author a <code>vivado_toolchain</code>, register
 multiple versions, gate them with constraints and platforms.</li>
+<li><a href="./flow.html">Rule flow</a> — diagrams of how the rules and providers
+connect, from HDL libraries through IP composition to bitstream and
+simulation.</li>
 <li><a href="./rules.html">Rules</a> — every public rule, indexed by build phase.</li>
 </ul>
 
@@ -306,6 +350,8 @@ multiple versions, gate them with constraints and platforms.</li>
         <script src="book.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="mermaid.min.js"></script>
+        <script src="mermaid-init.js"></script>
 
 
     </div>

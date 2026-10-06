@@ -156,26 +156,53 @@
                 <div id="content" class="content">
                     <main>
                         <!-- Generated with Stardoc: http://skydoc.bazel.build -->
-<h1 id="bitstream-phase-rule-vivado_write_bitstream"><a class="header" href="#bitstream-phase-rule-vivado_write_bitstream">Bitstream-phase rule: vivado_write_bitstream.</a></h1>
+<h1 id="bitstream-phase-rule-vivado_bitstream"><a class="header" href="#bitstream-phase-rule-vivado_bitstream">Bitstream-phase rule: vivado_bitstream.</a></h1>
 <h2 id="rules"><a class="header" href="#rules">Rules</a></h2>
 <ul>
-<li><a href="#vivado_write_bitstream">vivado_write_bitstream</a></li>
+<li><a href="#vivado_bitstream">vivado_bitstream</a></li>
+<li><a href="#vivado_device_image">vivado_device_image</a></li>
 </ul>
-<p><a id="vivado_write_bitstream"></a></p>
-<h2 id="vivado_write_bitstream"><a class="header" href="#vivado_write_bitstream">vivado_write_bitstream</a></h2>
+<p><a id="vivado_bitstream"></a></p>
+<h2 id="vivado_bitstream"><a class="header" href="#vivado_bitstream">vivado_bitstream</a></h2>
 <pre>
-load("@rules_vivado//vivado:bitstream.bzl", "vivado_write_bitstream")
+load("@rules_vivado//vivado:bitstream.bzl", "vivado_bitstream")
 
-vivado_write_bitstream(<a href="#vivado_write_bitstream-name">name</a>, <a href="#vivado_write_bitstream-checkpoint">checkpoint</a>, <a href="#vivado_write_bitstream-threads">threads</a>, <a href="#vivado_write_bitstream-with_xsa">with_xsa</a>, <a href="#vivado_write_bitstream-write_bitstream_template">write_bitstream_template</a>)
+vivado_bitstream(<a href="#vivado_bitstream-name">name</a>, <a href="#vivado_bitstream-checkpoint">checkpoint</a>, <a href="#vivado_bitstream-post_hooks">post_hooks</a>, <a href="#vivado_bitstream-pre_hooks">pre_hooks</a>, <a href="#vivado_bitstream-threads">threads</a>, <a href="#vivado_bitstream-timing_check">timing_check</a>, <a href="#vivado_bitstream-write_args">write_args</a>,
+                 <a href="#vivado_bitstream-write_bitstream_template">write_bitstream_template</a>)
 </pre>
-<p>Write a Vivado bitstream (.bit) from a routed checkpoint, optionally including a .xsa.</p>
+<p>Write a Vivado bitstream (.bit) from a routed checkpoint. For the <code>.xsa</code> hardware-platform handoff artifact, compose <code>vivado_hw_platform</code> on the same checkpoint.</p>
 <p><strong>ATTRIBUTES</strong></p>
 <div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
-<tr><td style="text-align: left"><a id="vivado_write_bitstream-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
-<tr><td style="text-align: left"><a id="vivado_write_bitstream-checkpoint"></a>checkpoint</td><td style="text-align: left">Routed checkpoint.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
-<tr><td style="text-align: left"><a id="vivado_write_bitstream-threads"></a>threads</td><td style="text-align: left">Threads to pass to vivado which defines the amount of parallelism.</td><td style="text-align: left">Integer</td><td style="text-align: left">optional</td><td style="text-align: left"><code>8</code></td></tr>
-<tr><td style="text-align: left"><a id="vivado_write_bitstream-with_xsa"></a>with_xsa</td><td style="text-align: left">Generate xsa too</td><td style="text-align: left">Boolean</td><td style="text-align: left">optional</td><td style="text-align: left"><code>False</code></td></tr>
-<tr><td style="text-align: left"><a id="vivado_write_bitstream-write_bitstream_template"></a>write_bitstream_template</td><td style="text-align: left">The write bitstream tcl template</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:write_bitstream.tcl.template"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_bitstream-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_bitstream-checkpoint"></a>checkpoint</td><td style="text-align: left">Routed checkpoint.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_bitstream-post_hooks"></a>post_hooks</td><td style="text-align: left"><code>.tcl</code>/<code>.xdc</code>/<code>.sdc</code> files OR <code>tcl_binary</code> targets sourced after a successful <code>write_bitstream</code>, in list order.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_bitstream-pre_hooks"></a>pre_hooks</td><td style="text-align: left"><code>.tcl</code>/<code>.xdc</code>/<code>.sdc</code> files OR <code>tcl_binary</code> targets sourced on the opened checkpoint before <code>write_bitstream</code>.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_bitstream-threads"></a>threads</td><td style="text-align: left">Threads to pass to vivado which defines the amount of parallelism.</td><td style="text-align: left">Integer</td><td style="text-align: left">optional</td><td style="text-align: left"><code>8</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_bitstream-timing_check"></a>timing_check</td><td style="text-align: left">Policy for post-route timing violations. Both setup (WNS) and hold (WHS) worst slack are probed. <code>error</code> (default) fails the action; <code>warn</code> logs a CRITICAL WARNING and runs <code>write_bitstream</code> anyway; <code>none</code> skips the gate entirely. A design with no post-route timing paths at all is always treated as unconstrained (warning, not failure).</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>"error"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_bitstream-write_args"></a>write_args</td><td style="text-align: left">Extra flags passed through to <code>write_bitstream</code>. Cannot contain <code>-force</code> (always emitted by the rule) or <code>-file</code> (the rule's declared output path is the positional arg).</td><td style="text-align: left">List of strings</td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_bitstream-write_bitstream_template"></a>write_bitstream_template</td><td style="text-align: left">The write bitstream tcl template</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:write_bitstream.tcl.template"</code></td></tr>
+</tbody></table>
+</div>
+<p><a id="vivado_device_image"></a></p>
+<h2 id="vivado_device_image"><a class="header" href="#vivado_device_image">vivado_device_image</a></h2>
+<pre>
+load("@rules_vivado//vivado:bitstream.bzl", "vivado_device_image")
+
+vivado_device_image(<a href="#vivado_device_image-name">name</a>, <a href="#vivado_device_image-checkpoint">checkpoint</a>, <a href="#vivado_device_image-no_pdi">no_pdi</a>, <a href="#vivado_device_image-post_hooks">post_hooks</a>, <a href="#vivado_device_image-pre_hooks">pre_hooks</a>, <a href="#vivado_device_image-threads">threads</a>, <a href="#vivado_device_image-timing_check">timing_check</a>,
+                    <a href="#vivado_device_image-write_args">write_args</a>, <a href="#vivado_device_image-write_device_image_template">write_device_image_template</a>)
+</pre>
+<p>Write a Versal device image (.pdi) from a routed checkpoint. For non-Versal architectures use <code>vivado_bitstream</code> instead. For the <code>.xsa</code> hardware-platform handoff artifact, compose <code>vivado_hw_platform</code> on the same checkpoint.</p>
+<p><strong>ATTRIBUTES</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="vivado_device_image-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_device_image-checkpoint"></a>checkpoint</td><td style="text-align: left">Routed checkpoint.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_device_image-no_pdi"></a>no_pdi</td><td style="text-align: left">Skip Vivado's internal bootgen wrap and shift PDI-production to <code>post_hooks</code>. When True, Vivado runs <code>write_device_image</code> with <code>-no_pdi</code> — only the intermediate <code>.rcdo</code> / <code>.rnpi</code> files (base name = <code>$env(VIVADO_PDI_INTERMEDIATE_BASE)</code>) plus a <code>gen_files/</code> directory are emitted. A <code>post_hooks</code> entry MUST produce the final <code>.pdi</code> at <code>$env(VIVADO_PDI_OUT)</code> (typically via <code>exec bootgen -arch versal -image &lt;BIF&gt; -w -o $env(VIVADO_PDI_OUT)</code>); Bazel fails the action if the file is missing. Both paths are exported as process env vars so hooks read them via the standard <code>$env(...)</code> channel without depending on Tcl globals the caller can't see. Note: the resulting 'declared output was not created' error surfaces at the rule level, not the hook, so hook authors need to know they own the PDI when this is set.</td><td style="text-align: left">Boolean</td><td style="text-align: left">optional</td><td style="text-align: left"><code>False</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_device_image-post_hooks"></a>post_hooks</td><td style="text-align: left"><code>.tcl</code>/<code>.xdc</code>/<code>.sdc</code> files OR <code>tcl_binary</code> targets sourced after a successful <code>write_device_image</code>, in list order. When <code>no_pdi = True</code>, at least one post_hook MUST produce the final <code>.pdi</code> at <code>$env(VIVADO_PDI_OUT)</code>.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_device_image-pre_hooks"></a>pre_hooks</td><td style="text-align: left"><code>.tcl</code>/<code>.xdc</code>/<code>.sdc</code> files OR <code>tcl_binary</code> targets sourced on the opened checkpoint before <code>write_device_image</code>.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_device_image-threads"></a>threads</td><td style="text-align: left">Threads to pass to vivado which defines the amount of parallelism.</td><td style="text-align: left">Integer</td><td style="text-align: left">optional</td><td style="text-align: left"><code>8</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_device_image-timing_check"></a>timing_check</td><td style="text-align: left">Policy for post-route timing violations. Both setup (WNS) and hold (WHS) worst slack are probed. <code>error</code> (default) fails the action; <code>warn</code> logs a CRITICAL WARNING and runs <code>write_device_image</code> anyway; <code>none</code> skips the gate entirely. A design with no post-route timing paths at all is always treated as unconstrained (warning, not failure).</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>"error"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_device_image-write_args"></a>write_args</td><td style="text-align: left">Extra flags passed through to <code>write_device_image</code>. Cannot contain <code>-force</code> (always emitted by the rule), <code>-file</code> (the rule's declared output path is the positional arg), or <code>-no_pdi</code> (use the dedicated <code>no_pdi</code> attr).</td><td style="text-align: left">List of strings</td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_device_image-write_device_image_template"></a>write_device_image_template</td><td style="text-align: left">The write device image tcl template</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:write_device_image.tcl.template"</code></td></tr>
 </tbody></table>
 </div>
                     </main>
@@ -186,7 +213,7 @@ vivado_write_bitstream(<a href="#vivado_write_bitstream-name">name</a>, <a href=
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="vivado_ip.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="vivado_hw_platform.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -200,7 +227,7 @@ vivado_write_bitstream(<a href="#vivado_write_bitstream-name">name</a>, <a href=
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="vivado_ip.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="vivado_hw_platform.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
@@ -224,6 +251,8 @@ vivado_write_bitstream(<a href="#vivado_write_bitstream-name">name</a>, <a href=
         <script src="book.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="mermaid.min.js"></script>
+        <script src="mermaid-init.js"></script>
 
 
     </div>

@@ -159,55 +159,11 @@
 <h1 id="ip-packaging-rules"><a class="header" href="#ip-packaging-rules">IP packaging rules</a></h1>
 <h2 id="rules"><a class="header" href="#rules">Rules</a></h2>
 <ul>
-<li><a href="#vivado_create_interface_ip">vivado_create_interface_ip</a></li>
-<li><a href="#vivado_create_ip">vivado_create_ip</a></li>
 <li><a href="#vivado_interface_definition">vivado_interface_definition</a></li>
+<li><a href="#vivado_interface_ip">vivado_interface_ip</a></li>
+<li><a href="#vivado_ip_core">vivado_ip_core</a></li>
+<li><a href="#vivado_xci">vivado_xci</a></li>
 </ul>
-<p><a id="vivado_create_interface_ip"></a></p>
-<h2 id="vivado_create_interface_ip"><a class="header" href="#vivado_create_interface_ip">vivado_create_interface_ip</a></h2>
-<pre>
-load("@rules_vivado//vivado:ip.bzl", "vivado_create_interface_ip")
-
-vivado_create_interface_ip(<a href="#vivado_create_interface_ip-name">name</a>, <a href="#vivado_create_interface_ip-create_interface_ip_template">create_interface_ip_template</a>, <a href="#vivado_create_interface_ip-description">description</a>, <a href="#vivado_create_interface_ip-interface">interface</a>, <a href="#vivado_create_interface_ip-module">module</a>,
-                           <a href="#vivado_create_interface_ip-part_number">part_number</a>, <a href="#vivado_create_interface_ip-vendor_display_name">vendor_display_name</a>)
-</pre>
-<p>Package a Vivado interface definition as an IP block. Unlike vivado_create_ip, this does not require a top module.</p>
-<p><strong>ATTRIBUTES</strong></p>
-<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
-<tr><td style="text-align: left"><a id="vivado_create_interface_ip-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
-<tr><td style="text-align: left"><a id="vivado_create_interface_ip-create_interface_ip_template"></a>create_interface_ip_template</td><td style="text-align: left">The TCL template for creating interface IP.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:create_interface_ip.tcl.template"</code></td></tr>
-<tr><td style="text-align: left"><a id="vivado_create_interface_ip-description"></a>description</td><td style="text-align: left">Description for the IP block.</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>""</code></td></tr>
-<tr><td style="text-align: left"><a id="vivado_create_interface_ip-interface"></a>interface</td><td style="text-align: left">The interface definition to package.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
-<tr><td style="text-align: left"><a id="vivado_create_interface_ip-module"></a>module</td><td style="text-align: left">The verilog_library containing the interface source file(s).</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>None</code></td></tr>
-<tr><td style="text-align: left"><a id="vivado_create_interface_ip-part_number"></a>part_number</td><td style="text-align: left">The targeted xilinx part.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
-<tr><td style="text-align: left"><a id="vivado_create_interface_ip-vendor_display_name"></a>vendor_display_name</td><td style="text-align: left">Display name for the vendor.</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>""</code></td></tr>
-</tbody></table>
-</div>
-<p><a id="vivado_create_ip"></a></p>
-<h2 id="vivado_create_ip"><a class="header" href="#vivado_create_ip">vivado_create_ip</a></h2>
-<pre>
-load("@rules_vivado//vivado:ip.bzl", "vivado_create_ip")
-
-vivado_create_ip(<a href="#vivado_create_ip-name">name</a>, <a href="#vivado_create_ip-create_ip_block_template">create_ip_block_template</a>, <a href="#vivado_create_ip-encrypt">encrypt</a>, <a href="#vivado_create_ip-ip_blocks">ip_blocks</a>, <a href="#vivado_create_ip-ip_library">ip_library</a>, <a href="#vivado_create_ip-ip_vendor">ip_vendor</a>,
-                 <a href="#vivado_create_ip-ip_version">ip_version</a>, <a href="#vivado_create_ip-jobs">jobs</a>, <a href="#vivado_create_ip-keyfile">keyfile</a>, <a href="#vivado_create_ip-module">module</a>, <a href="#vivado_create_ip-module_top">module_top</a>, <a href="#vivado_create_ip-part_number">part_number</a>)
-</pre>
-<p>Use vivado to package a module into an IP core</p>
-<p><strong>ATTRIBUTES</strong></p>
-<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
-<tr><td style="text-align: left"><a id="vivado_create_ip-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
-<tr><td style="text-align: left"><a id="vivado_create_ip-create_ip_block_template"></a>create_ip_block_template</td><td style="text-align: left">The create project tcl template</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:create_ip_block.tcl.template"</code></td></tr>
-<tr><td style="text-align: left"><a id="vivado_create_ip-encrypt"></a>encrypt</td><td style="text-align: left">Encrypt the sources. Note: This requires a license. See: https://support.xilinx.com/s/article/68071?language=en_US</td><td style="text-align: left">Boolean</td><td style="text-align: left">optional</td><td style="text-align: left"><code>False</code></td></tr>
-<tr><td style="text-align: left"><a id="vivado_create_ip-ip_blocks"></a>ip_blocks</td><td style="text-align: left">Ip blocks to include in this design.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
-<tr><td style="text-align: left"><a id="vivado_create_ip-ip_library"></a>ip_library</td><td style="text-align: left">The version of this ip core.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
-<tr><td style="text-align: left"><a id="vivado_create_ip-ip_vendor"></a>ip_vendor</td><td style="text-align: left">The version of this ip core.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
-<tr><td style="text-align: left"><a id="vivado_create_ip-ip_version"></a>ip_version</td><td style="text-align: left">The version of this ip core.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
-<tr><td style="text-align: left"><a id="vivado_create_ip-jobs"></a>jobs</td><td style="text-align: left">Jobs to pass to vivado which defines the amount of parallelism.</td><td style="text-align: left">Integer</td><td style="text-align: left">optional</td><td style="text-align: left"><code>4</code></td></tr>
-<tr><td style="text-align: left"><a id="vivado_create_ip-keyfile"></a>keyfile</td><td style="text-align: left">The keyfile to use when optionally encrypting</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:xilinx_keyfile.txt"</code></td></tr>
-<tr><td style="text-align: left"><a id="vivado_create_ip-module"></a>module</td><td style="text-align: left">The top level build.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
-<tr><td style="text-align: left"><a id="vivado_create_ip-module_top"></a>module_top</td><td style="text-align: left">The name of the top level verilog module.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
-<tr><td style="text-align: left"><a id="vivado_create_ip-part_number"></a>part_number</td><td style="text-align: left">The targeted xilinx part.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
-</tbody></table>
-</div>
 <p><a id="vivado_interface_definition"></a></p>
 <h2 id="vivado_interface_definition"><a class="header" href="#vivado_interface_definition">vivado_interface_definition</a></h2>
 <pre>
@@ -237,15 +193,116 @@ vivado_interface_definition(<a href="#vivado_interface_definition-name">name</a>
 <tr><td style="text-align: left"><a id="vivado_interface_definition-version"></a>version</td><td style="text-align: left">The version VLNV component (e.g., '1.0').</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>"1.0"</code></td></tr>
 </tbody></table>
 </div>
+<p><a id="vivado_interface_ip"></a></p>
+<h2 id="vivado_interface_ip"><a class="header" href="#vivado_interface_ip">vivado_interface_ip</a></h2>
+<pre>
+load("@rules_vivado//vivado:ip.bzl", "vivado_interface_ip")
+
+vivado_interface_ip(<a href="#vivado_interface_ip-name">name</a>, <a href="#vivado_interface_ip-create_interface_ip_template">create_interface_ip_template</a>, <a href="#vivado_interface_ip-interface">interface</a>, <a href="#vivado_interface_ip-module">module</a>)
+</pre>
+<p>Package a Vivado interface definition as an IP block. Unlike vivado_ip_core, this does not require a top module.</p>
+<p><strong>ATTRIBUTES</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="vivado_interface_ip-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_interface_ip-create_interface_ip_template"></a>create_interface_ip_template</td><td style="text-align: left">The TCL template for creating interface IP.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:create_interface_ip.tcl.template"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_interface_ip-interface"></a>interface</td><td style="text-align: left">The interface definition to package.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_interface_ip-module"></a>module</td><td style="text-align: left">The <code>verilog_library</code> / <code>vhdl_library</code> containing the interface source file(s). Optional. The default template doesn't read these — Vivado discovers bus and abstraction definitions from the repo path alone — but the transitive sources are staged into the action sandbox so a caller-supplied <code>create_interface_ip_template</code> can, and so the interface's HDL shows up in coverage instrumentation.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>None</code></td></tr>
+</tbody></table>
+</div>
+<p><a id="vivado_ip_core"></a></p>
+<h2 id="vivado_ip_core"><a class="header" href="#vivado_ip_core">vivado_ip_core</a></h2>
+<pre>
+load("@rules_vivado//vivado:ip.bzl", "vivado_ip_core")
+
+vivado_ip_core(<a href="#vivado_ip_core-name">name</a>, <a href="#vivado_ip_core-create_ip_block_template">create_ip_block_template</a>, <a href="#vivado_ip_core-encrypt">encrypt</a>, <a href="#vivado_ip_core-ip_blocks">ip_blocks</a>, <a href="#vivado_ip_core-ip_library">ip_library</a>, <a href="#vivado_ip_core-ip_vendor">ip_vendor</a>,
+               <a href="#vivado_ip_core-ip_version">ip_version</a>, <a href="#vivado_ip_core-jobs">jobs</a>, <a href="#vivado_ip_core-keyfile">keyfile</a>, <a href="#vivado_ip_core-module">module</a>, <a href="#vivado_ip_core-module_top">module_top</a>, <a href="#vivado_ip_core-part_number">part_number</a>, <a href="#vivado_ip_core-project_hooks">project_hooks</a>,
+               <a href="#vivado_ip_core-supported_families">supported_families</a>)
+</pre>
+<p>Use vivado to package a module into an IP core</p>
+<p><strong>ATTRIBUTES</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="vivado_ip_core-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_ip_core-create_ip_block_template"></a>create_ip_block_template</td><td style="text-align: left">The create project tcl template</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:create_ip_block.tcl.template"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_ip_core-encrypt"></a>encrypt</td><td style="text-align: left">Encrypt the sources. Note: This requires a license. See: https://support.xilinx.com/s/article/68071?language=en_US</td><td style="text-align: left">Boolean</td><td style="text-align: left">optional</td><td style="text-align: left"><code>False</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_ip_core-ip_blocks"></a>ip_blocks</td><td style="text-align: left">Ip blocks to include in this design.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_ip_core-ip_library"></a>ip_library</td><td style="text-align: left">The version of this ip core.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_ip_core-ip_vendor"></a>ip_vendor</td><td style="text-align: left">The version of this ip core.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_ip_core-ip_version"></a>ip_version</td><td style="text-align: left">The version of this ip core.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_ip_core-jobs"></a>jobs</td><td style="text-align: left">Jobs to pass to vivado which defines the amount of parallelism.</td><td style="text-align: left">Integer</td><td style="text-align: left">optional</td><td style="text-align: left"><code>4</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_ip_core-keyfile"></a>keyfile</td><td style="text-align: left">The keyfile to use when optionally encrypting</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:xilinx_keyfile.txt"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_ip_core-module"></a>module</td><td style="text-align: left">The top level build.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_ip_core-module_top"></a>module_top</td><td style="text-align: left">The name of the top level verilog module.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_ip_core-part_number"></a>part_number</td><td style="text-align: left">The targeted xilinx part.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_ip_core-project_hooks"></a>project_hooks</td><td style="text-align: left"><code>.tcl</code>/<code>.xdc</code>/<code>.sdc</code> files OR <code>tcl_binary</code> targets sourced INSIDE any downstream <code>vivado_project</code> action that folds this target in via <code>ip_blocks</code> / <code>block_designs</code>. Fires right after <code>create_project</code> + <code>source_mgmt_mode</code>, before any <code>add_files</code>. Home for setup the target needs to work in context (<code>board_part</code>, <code>set_msg_config</code>, TCL procs). Does NOT run in this target's own action — for that use <code>pre_hooks</code> / <code>post_hooks</code>. Sourced in list order; multiple targets' contributions concat in project-attr dep order; the project's own <code>pre_hooks_early</code> fires last so it wins on override.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_ip_core-supported_families"></a>supported_families</td><td style="text-align: left">Xilinx device families this IP can be consumed by (e.g. <code>["zynq", "zynquplus", "versal"]</code>). Each entry is registered at <code>Production</code> lifecycle. Leave empty to keep whatever <code>ipx::package_project</code> inferred from <code>part_number</code> — which restricts downstream consumers to the same family and produces <code>[Coretcl 2-1132] No IP matching VLNV ... is accessible for the current part '&lt;other-family-part&gt;'</code> when the consumer sits on a different family.</td><td style="text-align: left">List of strings</td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+</tbody></table>
+</div>
+<p><a id="vivado_xci"></a></p>
+<h2 id="vivado_xci"><a class="header" href="#vivado_xci">vivado_xci</a></h2>
+<pre>
+load("@rules_vivado//vivado:ip.bzl", "vivado_xci")
+
+vivado_xci(<a href="#vivado_xci-name">name</a>, <a href="#vivado_xci-data">data</a>, <a href="#vivado_xci-ip_blocks">ip_blocks</a>, <a href="#vivado_xci-jobs">jobs</a>, <a href="#vivado_xci-module_top">module_top</a>, <a href="#vivado_xci-part_number">part_number</a>, <a href="#vivado_xci-post_hooks">post_hooks</a>, <a href="#vivado_xci-pre_hooks">pre_hooks</a>,
+           <a href="#vivado_xci-project_hooks">project_hooks</a>, <a href="#vivado_xci-script">script</a>, <a href="#vivado_xci-xci_template">xci_template</a>)
+</pre>
+<p>Package a Xilinx-catalog IP from a configuration TCL into a consumable IP repo.</p>
+<p><code>script</code> is the configuration script sourced inside a fresh Vivado
+project. It must call
+<code>create_ip -name &lt;ip&gt; -vendor xilinx.com -library ip -version &lt;ver&gt; \     -module_name &lt;module_top&gt; -dir . -force</code> and (optionally) configure
+the IP via <code>set_property -dict {...} [get_ips &lt;module_top&gt;]</code>. The attr
+takes an executable target — in practice a <code>tcl_binary</code>, which is what
+carries the <code>deps</code> a script needs to <code>package require</code> shared
+<code>tcl_library</code> helpers. An extra-toolchains transition routes it through
+the Vivado tcl toolchain, so its wrapper comes out as a <code>.vhook.tcl</code>
+Vivado can source directly and its deps land on <code>auto_path</code>.</p>
+<p>The resulting <code>.xci</code> plus generated HDL/sim files are captured into a
+TreeArtifact directory and exposed via <code>VivadoIPBlockInfo</code> so the IP
+repo is auto-added to the consumer's <code>ip_repo_paths</code>.</p>
+<p>Alongside <code>VivadoIPBlockInfo</code>, the rule also exposes <code>VerilogInfo</code> and
+<code>VhdlInfo</code> so the target is <code>deps</code>-interchangeable with <code>verilog_library</code>
+and <code>vhdl_library</code>. Generated files are split by extension into four
+sibling TreeArtifacts — <code>&lt;name&gt;.verilog</code> (<code>.v</code> / <code>.sv</code>), <code>&lt;name&gt;.vhdl</code>
+(<code>.vhd</code> / <code>.vhdl</code>), <code>&lt;name&gt;.verilog_header</code> (<code>.vh</code> / <code>.svh</code>), and
+<code>&lt;name&gt;.data</code> (everything else) — which are placed on the appropriate
+<code>srcs</code> / <code>hdrs</code> / <code>data</code> fields of the two providers. Consuming rules
+add each directory via <code>add_files</code>; Vivado auto-classifies files
+inside by extension. The split carries the IP's <code>sim/</code> behavioural model
+and <code>hdl/</code> sources; the <code>synth/</code> wrapper (a second definition of the same
+module) and copies of upstream <code>ip_blocks</code> are left out, so a
+<code>verilog_library</code>-shaped consumer sees each module exactly once. Vivado
+flows should consume the IP through <code>ip_blocks</code> (the <code>.xci</code>) rather than
+through these directories.</p>
+<p>Use the <code>ip_blocks</code> attribute on <code>vivado_project</code>, <code>vivado_block_design</code>,
+or <code>vivado_ip_core</code> to make this IP available to that consumer. BD
+cells that reference the IP's VLNV (e.g.
+<code>create_bd_cell -vlnv xilinx.com:ip:axi_dma:7.1</code>) will then resolve via
+the catalog.</p>
+<p>For your own HDL packaged as a new reusable IP, use <code>vivado_ip_core</code>
+instead.</p>
+<p><strong>ATTRIBUTES</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="vivado_xci-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_xci-data"></a>data</td><td style="text-align: left">Additional files the IP-config TCL needs available in the action's sandbox. Each file is materialized at its workspace-relative path; the TCL can reference it via that path (e.g., to <code>exec patch -i ...</code> against the generated HDL, or to <code>read</code> a side data file). Same semantics as <code>cc_library.data</code>, <code>py_test.data</code>, etc.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_xci-ip_blocks"></a>ip_blocks</td><td style="text-align: left">Other IP blocks the configuration TCL depends on (rare; mostly empty).</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_xci-jobs"></a>jobs</td><td style="text-align: left">Jobs to pass to vivado (resource hint to Bazel's scheduler).</td><td style="text-align: left">Integer</td><td style="text-align: left">optional</td><td style="text-align: left"><code>1</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_xci-module_top"></a>module_top</td><td style="text-align: left">The <code>module_name</code> passed to <code>create_ip</code> in <code>script</code>. Used to locate the produced <code>.xci</code>.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_xci-part_number"></a>part_number</td><td style="text-align: left">Xilinx part number the IP is configured for.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_xci-post_hooks"></a>post_hooks</td><td style="text-align: left"><code>.tcl</code>/<code>.xdc</code>/<code>.sdc</code> files OR <code>tcl_binary</code> targets sourced after <code>generate_target</code>, before the project closes. Sourced in list order.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_xci-pre_hooks"></a>pre_hooks</td><td style="text-align: left"><code>.tcl</code>/<code>.xdc</code>/<code>.sdc</code> files OR <code>tcl_binary</code> targets sourced after project + IP-block setup, before sourcing the user IP TCL. Sourced in list order.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_xci-project_hooks"></a>project_hooks</td><td style="text-align: left"><code>.tcl</code>/<code>.xdc</code>/<code>.sdc</code> files OR <code>tcl_binary</code> targets sourced INSIDE any downstream <code>vivado_project</code> action that folds this target in via <code>ip_blocks</code> / <code>block_designs</code>. Fires right after <code>create_project</code> + <code>source_mgmt_mode</code>, before any <code>add_files</code>. Home for setup the target needs to work in context (<code>board_part</code>, <code>set_msg_config</code>, TCL procs). Does NOT run in this target's own action — for that use <code>pre_hooks</code> / <code>post_hooks</code>. Sourced in list order; multiple targets' contributions concat in project-attr dep order; the project's own <code>pre_hooks_early</code> fires last so it wins on override.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_xci-script"></a>script</td><td style="text-align: left">Executable target (a <code>tcl_binary</code>) whose script is sourced inside a fresh Vivado project to configure the IP. Must call <code>create_ip ... -module_name &lt;module_top&gt;</code>. Its <code>tcl_library</code> deps are staged as runfiles and reached with <code>package require</code>. A bare <code>.tcl</code> file is not accepted; wrap it in a <code>tcl_binary</code>.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_xci-xci_template"></a>xci_template</td><td style="text-align: left">The XCI tcl template.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:create_xci.tcl.template"</code></td></tr>
+</tbody></table>
+</div>
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="vivado_bitstream.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="vivado_block_design.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="vivado_simulation.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="vivado_packaged_ip.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -255,11 +312,11 @@ vivado_interface_definition(<a href="#vivado_interface_definition-name">name</a>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="vivado_bitstream.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="vivado_block_design.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="vivado_simulation.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="vivado_packaged_ip.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
@@ -283,6 +340,8 @@ vivado_interface_definition(<a href="#vivado_interface_definition-name">name</a>
         <script src="book.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="mermaid.min.js"></script>
+        <script src="mermaid-init.js"></script>
 
 
     </div>

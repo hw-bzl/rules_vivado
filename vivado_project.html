@@ -156,29 +156,49 @@
                 <div id="content" class="content">
                     <main>
                         <!-- Generated with Stardoc: http://skydoc.bazel.build -->
-<h1 id="vivado_create_project-rule-build-a-vivado-project-without-synthesizing"><a class="header" href="#vivado_create_project-rule-build-a-vivado-project-without-synthesizing">vivado_create_project rule: build a Vivado project without synthesizing.</a></h1>
+<h1 id="vivado_project-rule"><a class="header" href="#vivado_project-rule">vivado_project rule.</a></h1>
 <h2 id="rules"><a class="header" href="#rules">Rules</a></h2>
 <ul>
-<li><a href="#vivado_create_project">vivado_create_project</a></li>
+<li><a href="#vivado_project">vivado_project</a></li>
 </ul>
-<p><a id="vivado_create_project"></a></p>
-<h2 id="vivado_create_project"><a class="header" href="#vivado_create_project">vivado_create_project</a></h2>
+<p><a id="vivado_project"></a></p>
+<h2 id="vivado_project"><a class="header" href="#vivado_project">vivado_project</a></h2>
 <pre>
-load("@rules_vivado//vivado:project.bzl", "vivado_create_project")
+load("@rules_vivado//vivado:project.bzl", "vivado_project")
 
-vivado_create_project(<a href="#vivado_create_project-name">name</a>, <a href="#vivado_create_project-create_project_tcl_template">create_project_tcl_template</a>, <a href="#vivado_create_project-ip_blocks">ip_blocks</a>, <a href="#vivado_create_project-jobs">jobs</a>, <a href="#vivado_create_project-module">module</a>, <a href="#vivado_create_project-module_top">module_top</a>,
-                      <a href="#vivado_create_project-part_number">part_number</a>)
+vivado_project(<a href="#vivado_project-name">name</a>, <a href="#vivado_project-data">data</a>, <a href="#vivado_project-block_designs">block_designs</a>, <a href="#vivado_project-ip_blocks">ip_blocks</a>, <a href="#vivado_project-module">module</a>, <a href="#vivado_project-module_top">module_top</a>, <a href="#vivado_project-part_number">part_number</a>, <a href="#vivado_project-pre_hooks">pre_hooks</a>,
+               <a href="#vivado_project-pre_hooks_early">pre_hooks_early</a>, <a href="#vivado_project-project_tcl_template">project_tcl_template</a>)
 </pre>
-<p>Create a Vivado project from a verilog_library without running synthesis.</p>
+<p>Emit a TCL project-creation script. Does NOT invoke Vivado.</p>
+<p>A spec-carrying rule: its sole build-time action is a template expansion
+producing <code>&lt;name&gt;.project.tcl</code>, which — sourced inside a Vivado process
+— runs <code>create_project</code>, source ingest, constraints, and hooks. It stops
+short of <code>generate_target</code>, because the right intent (<code>{synthesis implementation}</code> vs <code>simulation</code>) depends on the consumer; each consumer
+issues its own after sourcing.</p>
+<p>Two ways to consume it:</p>
+<ul>
+<li><code>vivado_synthesis</code> (and the other phase rules) take
+<code>project = &lt;label&gt;</code> and source the emitted script inside their Vivado
+action before doing their own work.</li>
+<li>A GUI launcher can <code>vivado -source &lt;name&gt;.project.tcl</code> directly. The
+script's <code>PROJECT_MODE</code> / <code>PROJECT_DIR</code> variables default to <code>project</code>
+mode in <code>.</code>; override them with <code>VIVADO_PROJECT_MODE</code> /
+<code>VIVADO_PROJECT_DIR</code>, or by pre-setting the Tcl variables before
+sourcing.</li>
+</ul>
+<p>Provides <code>VivadoProjectInfo</code>.</p>
 <p><strong>ATTRIBUTES</strong></p>
 <div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
-<tr><td style="text-align: left"><a id="vivado_create_project-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
-<tr><td style="text-align: left"><a id="vivado_create_project-create_project_tcl_template"></a>create_project_tcl_template</td><td style="text-align: left">The create project tcl template</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:create_project.tcl.template"</code></td></tr>
-<tr><td style="text-align: left"><a id="vivado_create_project-ip_blocks"></a>ip_blocks</td><td style="text-align: left">Ip blocks to include in this design.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
-<tr><td style="text-align: left"><a id="vivado_create_project-jobs"></a>jobs</td><td style="text-align: left">Jobs to pass to vivado which defines the amount of parallelism.</td><td style="text-align: left">Integer</td><td style="text-align: left">optional</td><td style="text-align: left"><code>4</code></td></tr>
-<tr><td style="text-align: left"><a id="vivado_create_project-module"></a>module</td><td style="text-align: left">The top level build.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
-<tr><td style="text-align: left"><a id="vivado_create_project-module_top"></a>module_top</td><td style="text-align: left">The name of the top level verilog module.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
-<tr><td style="text-align: left"><a id="vivado_create_project-part_number"></a>part_number</td><td style="text-align: left">The targeted xilinx part.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_project-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_project-data"></a>data</td><td style="text-align: left">Constraint / setup files (<code>.xdc</code>, <code>.sdc</code>, <code>.tcl</code>) loaded in EXACT list order — the escape hatch for files whose relative ordering matters (e.g. a <code>set_clock_groups.xdc</code> that references clocks defined in a <code>create_clock.xdc</code> sourced earlier). Loaded AFTER the HDL-walk-swept <code>.xdc</code> files from <code>verilog_library.data</code> / <code>vhdl_library.data</code>, so project-scope constraints layer on top of per-library foundations. <code>.xdc</code>/<code>.sdc</code> → <code>read_xdc</code>, <code>.tcl</code> → <code>source</code>. Files whose order doesn't matter should live on the HDL library's <code>.data</code> instead and ride the HDL dep graph.<br><br>Put a <code># do not sort</code> comment above an order-sensitive list. buildifier sorts <code>data</code> lists by default, so without it a routine format pass silently rewrites the constraint load order — nothing fails until Vivado applies the wrong constraints.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_project-block_designs"></a>block_designs</td><td style="text-align: left">Block designs (<code>vivado_block_design</code> targets) to fold into the project. Copied under <code>$PROJECT_DIR/imported_bds/&lt;name&gt;/</code> and <code>add_files</code>d. The consumer (<code>vivado_synthesis</code> / <code>vivado_xsim_test</code>) picks the appropriate <code>generate_target</code> intent (<code>{synthesis implementation}</code> vs <code>simulation</code>).</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_project-ip_blocks"></a>ip_blocks</td><td style="text-align: left">IP blocks to include in this design.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_project-module"></a>module</td><td style="text-align: left">Top-level HDL library. Optional — omit for IP-only projects (e.g. <code>vivado_export_simulation</code> in sim-from-packaged-IPs mode). When set, its transitive sources are <code>read_verilog</code> / <code>read_vhdl</code>d and its <code>.xdc</code> / <code>.tcl</code> files are added; when unset, only <code>ip_blocks</code> / <code>block_designs</code> contribute sources.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>None</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_project-module_top"></a>module_top</td><td style="text-align: left">The name of the top level verilog module.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_project-part_number"></a>part_number</td><td style="text-align: left">The targeted xilinx part.</td><td style="text-align: left">String</td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_project-pre_hooks"></a>pre_hooks</td><td style="text-align: left"><code>.tcl</code>/<code>.xdc</code>/<code>.sdc</code> files OR <code>tcl_binary</code> targets sourced AFTER all <code>add_files</code> but BEFORE the emitted script returns control to its caller. Home for hooks that need sources loaded but must run before any <code>generate_target</code> — e.g. <code>fixup_constraints.tcl</code> calling <code>get_files -of [get_ips]</code>. For post-elaboration hooks, use the consumer's <code>pre_hooks</code> (<code>vivado_synthesis.pre_hooks</code>, <code>vivado_xsim_test.pre_hooks</code>). For hooks that set project properties (<code>board_part</code>) or define TCL procs used by BD sources, use <code>pre_hooks_early</code>. Sourced in list order.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_project-pre_hooks_early"></a>pre_hooks_early</td><td style="text-align: left"><code>.tcl</code>/<code>.xdc</code>/<code>.sdc</code> files OR <code>tcl_binary</code> targets sourced AFTER <code>create_project</code> but BEFORE any <code>add_files</code>. Home for hooks that set project-scope properties (<code>board_part</code>, <code>set_msg_config</code>) or define TCL procs consumed by BD <code>.tcl</code> scripts loaded during add_files (e.g. <code>amba::add_associated_busif</code>, <code>noc::*</code>). Sourced in list order.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_project-project_tcl_template"></a>project_tcl_template</td><td style="text-align: left">Template driving the emitted project TCL.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:project.tcl.template"</code></td></tr>
 </tbody></table>
 </div>
                     </main>
@@ -189,7 +209,7 @@ vivado_create_project(<a href="#vivado_create_project-name">name</a>, <a href="#
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="vivado_synthesis.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="vivado_project_export.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -203,7 +223,7 @@ vivado_create_project(<a href="#vivado_create_project-name">name</a>, <a href="#
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="vivado_synthesis.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="vivado_project_export.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
@@ -227,6 +247,8 @@ vivado_create_project(<a href="#vivado_create_project-name">name</a>, <a href="#
         <script src="book.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="mermaid.min.js"></script>
+        <script src="mermaid-init.js"></script>
 
 
     </div>

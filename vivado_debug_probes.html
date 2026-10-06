@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Rules - rules_vivado</title>
+        <title>vivado_debug_probes - rules_vivado</title>
 
 
         <!-- Custom HTML head -->
@@ -155,99 +155,44 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="rules"><a class="header" href="#rules">Rules</a></h1>
-<p>Every public rule in <code>rules_vivado</code>, grouped by the build phase it
-belongs to. All of them resolve their Xilinx install through a
-registered <a href="./toolchains.html"><code>vivado_toolchain</code></a>. See
-<a href="./flow.html">Rule flow</a> for how they connect.</p>
-<h2 id="project-setup"><a class="header" href="#project-setup">Project setup</a></h2>
+                        <!-- Generated with Stardoc: http://skydoc.bazel.build -->
+<h1 id="vivado_debug_probes-rule"><a class="header" href="#vivado_debug_probes-rule">vivado_debug_probes rule.</a></h1>
+<h2 id="rules"><a class="header" href="#rules">Rules</a></h2>
 <ul>
-<li><a href="./vivado_project.html"><code>vivado_project</code></a> — emit a TCL script that
-creates a Vivado project (no Vivado invocation at build time).
-Consumed by <code>vivado_synthesis</code>, the simulation rules,
-<code>vivado_project_export</code>, and GUI launchers.</li>
-<li><a href="./vivado_xdc_library.html"><code>xdc_library</code></a> — bundle constraint files
-with the constraint files they must run after; drops into
-<code>vivado_project.data</code>.</li>
-<li><a href="./vivado_project_export.html"><code>vivado_project_export</code></a> — open the
-project, source a user <code>tcl_binary</code>, and capture the files it writes.</li>
+<li><a href="#vivado_debug_probes">vivado_debug_probes</a></li>
 </ul>
-<h2 id="synthesis"><a class="header" href="#synthesis">Synthesis</a></h2>
-<ul>
-<li><a href="./vivado_synthesis.html"><code>vivado_synthesis</code></a> — run synthesis on a
-<code>vivado_project</code> and produce a synthesis checkpoint (<code>.dcp</code>).</li>
-<li><a href="./vivado_synthesis.html"><code>vivado_synthesis_optimize</code></a> — post-synthesis
-optimization pass on a synthesis checkpoint.</li>
-</ul>
-<h2 id="implementation"><a class="header" href="#implementation">Implementation</a></h2>
-<ul>
-<li><a href="./vivado_implementation.html"><code>vivado_placement</code></a> — placement on a
-synthesis checkpoint.</li>
-<li><a href="./vivado_implementation.html"><code>vivado_place_optimize</code></a> —
-post-placement optimization on a placement checkpoint.</li>
-<li><a href="./vivado_implementation.html"><code>vivado_routing</code></a> — routing on a
-placement checkpoint.</li>
-</ul>
-<h2 id="hand-off-artifacts"><a class="header" href="#hand-off-artifacts">Hand-off artifacts</a></h2>
-<ul>
-<li><a href="./vivado_bitstream.html"><code>vivado_bitstream</code></a> — emit the final <code>.bit</code>
-from a routing checkpoint.</li>
-<li><a href="./vivado_bitstream.html"><code>vivado_device_image</code></a> — emit a Versal <code>.pdi</code>
-from a routing checkpoint.</li>
-<li><a href="./vivado_hw_platform.html"><code>vivado_hw_platform</code></a> — emit the <code>.xsa</code>
-hardware platform for Vitis / PetaLinux from a routing checkpoint.</li>
-<li><a href="./vivado_debug_probes.html"><code>vivado_debug_probes</code></a> — emit the <code>.ltx</code>
-probe file for Hardware Manager from any phase checkpoint.</li>
-</ul>
-<h2 id="ip-composition"><a class="header" href="#ip-composition">IP composition</a></h2>
-<ul>
-<li><a href="./vivado_ip.html"><code>vivado_xci</code></a> — configure a Xilinx-catalog IP from a
-Tcl script into a consumable IP repo.</li>
-<li><a href="./vivado_ip.html"><code>vivado_ip_core</code></a> — package an HDL module as a
-Vivado IP core.</li>
-<li><a href="./vivado_ip.html"><code>vivado_interface_definition</code></a> — generate IP-XACT
-bus + abstraction definitions from a SystemVerilog interface.</li>
-<li><a href="./vivado_ip.html"><code>vivado_interface_ip</code></a> — register an interface
-definition as an IP catalog entry so block designs can use it.</li>
-<li><a href="./vivado_packaged_ip.html"><code>vivado_packaged_ip</code></a> — stage an
-already-packaged IP repo for <code>ip_blocks</code>.</li>
-<li><a href="./vivado_block_design.html"><code>vivado_block_design</code></a> — build a <code>.bd</code> from
-a Tcl script for <code>vivado_project.block_designs</code>.</li>
-</ul>
-<h2 id="simulation"><a class="header" href="#simulation">Simulation</a></h2>
-<ul>
-<li><a href="./vivado_simulation.html"><code>vivado_xsim_test</code></a> — run a Vivado XSim
-simulation as a Bazel <code>test</code> target.</li>
-<li><a href="./vivado_simulation.html"><code>vivado_export_simulation</code></a> — run
-<code>export_simulation</code> for any supported simulator and stage the bundle.</li>
-<li><a href="./vivado_simulation.html"><code>vivado_compile_simlib</code></a> — pre-compile the
-Xilinx simulation libraries for a third-party simulator.</li>
-</ul>
-<h2 id="toolchain"><a class="header" href="#toolchain">Toolchain</a></h2>
-<ul>
-<li><a href="./vivado_toolchain.html"><code>vivado_toolchain</code></a> — declare a Vivado
-install for toolchain resolution. See
-<a href="./toolchains.html">Toolchains</a> for the full workflow.</li>
-</ul>
-<h2 id="providers"><a class="header" href="#providers">Providers</a></h2>
-<ul>
-<li><a href="./vivado_providers.html"><code>VivadoToolchainInfo</code> and friends</a> — the
-providers passed between phases (<code>VivadoProjectInfo</code>,
-<code>VivadoSynthCheckpointInfo</code>, <code>VivadoPlacementCheckpointInfo</code>,
-<code>VivadoRoutingCheckpointInfo</code>, <code>VivadoIPBlockInfo</code>,
-<code>VivadoBlockDesignInfo</code>, <code>VivadoInterfaceInfo</code>,
-<code>VivadoExportSimulationInfo</code>, and more).</li>
-</ul>
+<p><a id="vivado_debug_probes"></a></p>
+<h2 id="vivado_debug_probes"><a class="header" href="#vivado_debug_probes">vivado_debug_probes</a></h2>
+<pre>
+load("@rules_vivado//vivado:debug_probes.bzl", "vivado_debug_probes")
 
+vivado_debug_probes(<a href="#vivado_debug_probes-name">name</a>, <a href="#vivado_debug_probes-checkpoint">checkpoint</a>, <a href="#vivado_debug_probes-post_hooks">post_hooks</a>, <a href="#vivado_debug_probes-pre_hooks">pre_hooks</a>, <a href="#vivado_debug_probes-threads">threads</a>, <a href="#vivado_debug_probes-write_debug_probes_template">write_debug_probes_template</a>)
+</pre>
+<p>Emit a <code>.ltx</code> debug-probes file from a phase checkpoint via <code>write_debug_probes</code>.</p>
+<p>Vivado's Hardware Manager reads the <code>.ltx</code> during ILA / VIO bring-up to
+map probe nets back to design signals. Any phase checkpoint works, so
+point <code>checkpoint</code> at whichever phase suits the design — usually
+post-place or post-route, since probes track physical resources.</p>
+<p>Provides <code>VivadoDebugProbesInfo</code>.</p>
+<p><strong>ATTRIBUTES</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="vivado_debug_probes-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_debug_probes-checkpoint"></a>checkpoint</td><td style="text-align: left">Phase checkpoint (synth, placement, or routing). Rule picks the most-specific provider present on the target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_debug_probes-post_hooks"></a>post_hooks</td><td style="text-align: left"><code>.tcl</code> files OR <code>tcl_binary</code> targets sourced after <code>write_debug_probes</code> completes, in list order.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_debug_probes-pre_hooks"></a>pre_hooks</td><td style="text-align: left"><code>.tcl</code> files OR <code>tcl_binary</code> targets sourced on the opened checkpoint before <code>write_debug_probes</code>, in list order.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_debug_probes-threads"></a>threads</td><td style="text-align: left">Threads passed to <code>general.maxThreads</code>.</td><td style="text-align: left">Integer</td><td style="text-align: left">optional</td><td style="text-align: left"><code>8</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_debug_probes-write_debug_probes_template"></a>write_debug_probes_template</td><td style="text-align: left">The write_debug_probes tcl template.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:write_debug_probes.tcl.template"</code></td></tr>
+</tbody></table>
+</div>
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="flow.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="vivado_hw_platform.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="vivado_project.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="vivado_block_design.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -257,11 +202,11 @@ providers passed between phases (<code>VivadoProjectInfo</code>,
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="flow.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="vivado_hw_platform.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="vivado_project.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="vivado_block_design.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>

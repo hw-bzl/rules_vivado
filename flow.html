@@ -1,0 +1,410 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Rule flow - rules_vivado</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc.js"></script>
+    </head>
+    <body>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">rules_vivado</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/hw-bzl/rules_vivado" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="rule-flow"><a class="header" href="#rule-flow">Rule flow</a></h1>
+<p>How the rules connect. Every <code>vivado_*</code> rule resolves the Xilinx install
+through the registered <a href="./toolchains.html"><code>vivado_toolchain</code></a>; that edge
+is left out of the diagrams below because it reaches every node.</p>
+<p>Each box is a rule. Each arrow is a Bazel dependency, labelled with the
+attribute on the consuming rule and the provider that crosses it. Boxes
+outside the dashed groups come from other rulesets.</p>
+<h2 id="end-to-end"><a class="header" href="#end-to-end">End to end</a></h2>
+<pre class="mermaid">flowchart LR
+    subgraph hdl [HDL and constraints]
+        VL[&quot;verilog_library&lt;br/&gt;vhdl_library&quot;]
+        XL[xdc_library]
+        TB[tcl_binary]
+    end
+
+    subgraph ip [IP composition]
+        XCI[vivado_xci]
+        IPC[vivado_ip_core]
+        IFD[vivado_interface_definition]
+        IFIP[vivado_interface_ip]
+        PIP[vivado_packaged_ip]
+        BD[vivado_block_design]
+    end
+
+    PRJ[vivado_project]
+
+    subgraph impl [Synthesis and implementation]
+        SYN[vivado_synthesis]
+        SOPT[vivado_synthesis_optimize]
+        PLC[vivado_placement]
+        POPT[vivado_place_optimize]
+        RTE[vivado_routing]
+    end
+
+    subgraph out [Hand-off artifacts]
+        BIT[&quot;vivado_bitstream&lt;br/&gt;.bit&quot;]
+        PDI[&quot;vivado_device_image&lt;br/&gt;.pdi&quot;]
+        XSA[&quot;vivado_hw_platform&lt;br/&gt;.xsa&quot;]
+        LTX[&quot;vivado_debug_probes&lt;br/&gt;.ltx&quot;]
+    end
+
+    subgraph sim [Simulation and export]
+        XSIM[vivado_xsim_test]
+        EXS[vivado_export_simulation]
+        PEX[vivado_project_export]
+        SIMLIB[vivado_compile_simlib]
+    end
+
+    VL -- &quot;module&lt;br/&gt;VerilogInfo / VhdlInfo&quot; --&gt; PRJ
+    VL -- &quot;module&quot; --&gt; IPC
+    VL -- &quot;hdl_libraries&quot; --&gt; PIP
+    XL -- &quot;data&lt;br/&gt;XdcInfo&quot; --&gt; PRJ
+    TB -- &quot;script&lt;br/&gt;pre_hooks / post_hooks&quot; --&gt; BD
+    TB -- &quot;script&quot; --&gt; XCI
+
+    IFD -- &quot;interface&lt;br/&gt;VivadoInterfaceInfo&quot; --&gt; IFIP
+    XCI -- &quot;ip_blocks&lt;br/&gt;VivadoIPBlockInfo&quot; --&gt; BD
+    IPC -- &quot;ip_blocks&quot; --&gt; BD
+    IFIP -- &quot;ip_blocks&quot; --&gt; BD
+    PIP -- &quot;ip_blocks&quot; --&gt; BD
+    XCI -- &quot;ip_blocks&quot; --&gt; PRJ
+    IPC -- &quot;ip_blocks&quot; --&gt; PRJ
+    PIP -- &quot;ip_blocks&quot; --&gt; PRJ
+    BD -- &quot;block_designs&lt;br/&gt;VivadoBlockDesignInfo&quot; --&gt; PRJ
+
+    PRJ -- &quot;project&lt;br/&gt;VivadoProjectInfo&quot; --&gt; SYN
+    PRJ -- &quot;project&quot; --&gt; XSIM
+    PRJ -- &quot;project&quot; --&gt; EXS
+    PRJ -- &quot;project&quot; --&gt; PEX
+
+    SYN -- &quot;checkpoint&lt;br/&gt;VivadoSynthCheckpointInfo&quot; --&gt; SOPT
+    SOPT -- &quot;checkpoint&quot; --&gt; PLC
+    PLC -- &quot;checkpoint&lt;br/&gt;VivadoPlacementCheckpointInfo&quot; --&gt; POPT
+    POPT -- &quot;checkpoint&quot; --&gt; RTE
+    RTE -- &quot;checkpoint&lt;br/&gt;VivadoRoutingCheckpointInfo&quot; --&gt; BIT
+    RTE -- &quot;checkpoint&quot; --&gt; PDI
+    RTE -- &quot;checkpoint&quot; --&gt; XSA
+    RTE -- &quot;checkpoint&quot; --&gt; LTX
+</pre>
+<p><code>vivado_compile_simlib</code> stands alone: it pre-compiles the Xilinx
+simulation libraries for a third-party simulator and hands the result to
+whatever consumes a <code>vivado_export_simulation</code> bundle, outside this
+ruleset.</p>
+<h2 id="project-to-bitstream"><a class="header" href="#project-to-bitstream">Project to bitstream</a></h2>
+<p>The implementation chain is one rule per Vivado command, and each rule
+accepts the provider of the phase before it. The two optimization phases
+are optional: <code>vivado_placement</code> takes a <code>VivadoSynthCheckpointInfo</code>
+from either <code>vivado_synthesis</code> or <code>vivado_synthesis_optimize</code>, and
+<code>vivado_routing</code> takes a <code>VivadoPlacementCheckpointInfo</code> from either
+<code>vivado_placement</code> or <code>vivado_place_optimize</code>.</p>
+<pre class="mermaid">flowchart TD
+    PRJ[&quot;vivado_project&lt;br/&gt;&lt;i&gt;emits .project.tcl, runs no Vivado&lt;/i&gt;&quot;]
+    SYN[&quot;vivado_synthesis&lt;br/&gt;&lt;i&gt;synth_design, .dcp + impl-XDC bundle&lt;/i&gt;&quot;]
+    SOPT[&quot;vivado_synthesis_optimize&lt;br/&gt;&lt;i&gt;opt_design&lt;/i&gt;&quot;]
+    PLC[&quot;vivado_placement&lt;br/&gt;&lt;i&gt;place_design&lt;/i&gt;&quot;]
+    POPT[&quot;vivado_place_optimize&lt;br/&gt;&lt;i&gt;phys_opt_design&lt;/i&gt;&quot;]
+    RTE[&quot;vivado_routing&lt;br/&gt;&lt;i&gt;route_design&lt;/i&gt;&quot;]
+    BIT[&quot;vivado_bitstream&lt;br/&gt;&lt;i&gt;write_bitstream&lt;/i&gt;&quot;]
+    PDI[&quot;vivado_device_image&lt;br/&gt;&lt;i&gt;write_device_image (Versal)&lt;/i&gt;&quot;]
+    XSA[&quot;vivado_hw_platform&lt;br/&gt;&lt;i&gt;write_hw_platform&lt;/i&gt;&quot;]
+    LTX[&quot;vivado_debug_probes&lt;br/&gt;&lt;i&gt;write_debug_probes&lt;/i&gt;&quot;]
+
+    PRJ -- VivadoProjectInfo --&gt; SYN
+    SYN -- VivadoSynthCheckpointInfo --&gt; SOPT
+    SYN -. &quot;optional phase skipped&quot; .-&gt; PLC
+    SOPT -- VivadoSynthCheckpointInfo --&gt; PLC
+    PLC -- VivadoPlacementCheckpointInfo --&gt; POPT
+    PLC -. &quot;optional phase skipped&quot; .-&gt; RTE
+    POPT -- VivadoPlacementCheckpointInfo --&gt; RTE
+    RTE -- VivadoRoutingCheckpointInfo --&gt; BIT
+    RTE -- VivadoRoutingCheckpointInfo --&gt; PDI
+    RTE -- VivadoRoutingCheckpointInfo --&gt; XSA
+    SYN -. &quot;any checkpoint provider&quot; .-&gt; LTX
+    PLC -. &quot;any checkpoint provider&quot; .-&gt; LTX
+    RTE -- VivadoRoutingCheckpointInfo --&gt; LTX
+</pre>
+<p>Two providers ride along the whole chain rather than crossing a single
+edge:</p>
+<ul>
+<li><code>VivadoLogInfo</code> accumulates every upstream phase's <code>.log</code> and <code>.jou</code>,
+so building <code>:my_bitstream</code> with <code>--output_groups=log</code> yields the logs
+of synthesis through bitstream.</li>
+<li><code>VivadoReportsInfo</code> maps each phase's <code>reports</code> attr to its declared
+report files.</li>
+</ul>
+<p>Every phase rule also carries <code>pre_hooks</code> and <code>post_hooks</code>: <code>.tcl</code>,
+<code>.xdc</code>, <code>.sdc</code> files or <code>tcl_binary</code> targets sourced inside the Vivado
+session before and after the phase's main command.</p>
+<h2 id="ip-composition"><a class="header" href="#ip-composition">IP composition</a></h2>
+<p>IP enters a project in two shapes. <code>VivadoIPBlockInfo</code> describes a repo
+plus, optionally, a configured <code>.xci</code> or a VLNV to <code>create_ip</code>;
+<code>VivadoBlockDesignInfo</code> describes a <code>.bd</code> and the IP repos it needs.</p>
+<pre class="mermaid">flowchart LR
+    SV[&quot;SystemVerilog&lt;br/&gt;interface .sv&quot;]
+    IFD[vivado_interface_definition]
+    IFIP[vivado_interface_ip]
+    VL[&quot;verilog_library&lt;br/&gt;vhdl_library&quot;]
+    IPC[vivado_ip_core]
+    XCI[vivado_xci]
+    PIP[vivado_packaged_ip]
+    BD[vivado_block_design]
+    PRJ[vivado_project]
+
+    SV -- src --&gt; IFD
+    IFD -- &quot;interface&lt;br/&gt;VivadoInterfaceInfo&quot; --&gt; IFIP
+    VL -- module --&gt; IPC
+    VL -- hdl_libraries --&gt; PIP
+    IFIP -- &quot;ip_blocks&lt;br/&gt;VivadoIPBlockInfo&quot; --&gt; IPC
+    XCI -- &quot;ip_blocks&quot; --&gt; IPC
+    IFIP -- ip_blocks --&gt; BD
+    IPC -- ip_blocks --&gt; BD
+    XCI -- ip_blocks --&gt; BD
+    PIP -- ip_blocks --&gt; BD
+    IPC -- ip_blocks --&gt; PRJ
+    XCI -- ip_blocks --&gt; PRJ
+    PIP -- ip_blocks --&gt; PRJ
+    BD -- &quot;block_designs&lt;br/&gt;VivadoBlockDesignInfo&quot; --&gt; PRJ
+    XCI -. &quot;deps&lt;br/&gt;VerilogInfo / VhdlInfo&quot; .-&gt; VL
+</pre>
+<ul>
+<li><code>vivado_xci</code> configures a Xilinx-catalog IP from a <code>tcl_binary</code> script.
+Besides <code>VivadoIPBlockInfo</code> it exposes <code>VerilogInfo</code> and <code>VhdlInfo</code>, so
+it can also sit in a <code>verilog_library</code>'s <code>deps</code> (dashed edge).</li>
+<li><code>vivado_ip_core</code> packages your own HDL as a reusable IP core.</li>
+<li><code>vivado_interface_definition</code> turns a SystemVerilog <code>interface</code> into
+IP-XACT bus and abstraction definitions; <code>vivado_interface_ip</code>
+registers them as a catalog entry so block designs can connect to it.</li>
+<li><code>vivado_packaged_ip</code> stages an already-packaged IP repo.</li>
+<li><code>vivado_block_design</code> builds a <code>.bd</code> from a <code>tcl_binary</code> script and
+forwards the IP repos its cells reference.</li>
+</ul>
+<p>Any of these can contribute <code>project_hooks</code>: Tcl sourced inside every
+downstream <code>vivado_project</code> that folds the target in, right after
+<code>create_project</code>.</p>
+<h2 id="simulation-and-export"><a class="header" href="#simulation-and-export">Simulation and export</a></h2>
+<pre class="mermaid">flowchart LR
+    PRJ[vivado_project]
+    XSIM[&quot;vivado_xsim_test&lt;br/&gt;&lt;i&gt;bazel test&lt;/i&gt;&quot;]
+    EXS[&quot;vivado_export_simulation&lt;br/&gt;&lt;i&gt;export_simulation bundle&lt;/i&gt;&quot;]
+    PEX[&quot;vivado_project_export&lt;br/&gt;&lt;i&gt;user script, declared outs&lt;/i&gt;&quot;]
+    SIMLIB[&quot;vivado_compile_simlib&lt;br/&gt;&lt;i&gt;compile_simlib&lt;/i&gt;&quot;]
+    EXT[&quot;third-party simulator&lt;br/&gt;(outside rules_vivado)&quot;]
+
+    PRJ -- &quot;project&lt;br/&gt;VivadoProjectInfo&quot; --&gt; XSIM
+    PRJ -- &quot;project&quot; --&gt; EXS
+    PRJ -- &quot;project&quot; --&gt; PEX
+    EXS -- VivadoExportSimulationInfo --&gt; EXT
+    SIMLIB -- VivadoCompiledSimlibInfo --&gt; EXT
+</pre>
+<ul>
+<li><code>vivado_xsim_test</code> exports an xsim bundle at build time and runs it as
+a Bazel test, scanning the log for error and completion patterns.</li>
+<li><code>vivado_export_simulation</code> produces the same kind of bundle for any
+simulator Vivado's <code>export_simulation</code> supports and stops there.</li>
+<li><code>vivado_project_export</code> opens the project, sources a user <code>tcl_binary</code>,
+and captures whatever files or directories that script writes.</li>
+<li><code>vivado_compile_simlib</code> pre-compiles <code>unisim</code>, <code>secureip</code> and friends
+for a third-party simulator.</li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="vivado_toolchain.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="rules.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="vivado_toolchain.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="rules.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="mermaid.min.js"></script>
+        <script src="mermaid-init.js"></script>
+
+
+    </div>
+    </body>
+</html>

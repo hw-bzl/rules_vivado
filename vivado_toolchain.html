@@ -157,92 +157,6 @@
                     <main>
                         <!-- Generated with Stardoc: http://skydoc.bazel.build -->
 <h1 id="toolchain-for-the-xilinx-vivado-tool"><a class="header" href="#toolchain-for-the-xilinx-vivado-tool">Toolchain for the Xilinx Vivado tool.</a></h1>
-<p>Defines <code>VivadoToolchainInfo</code> and the <code>vivado_toolchain</code> rule. Users register a
-<code>vivado_toolchain</code> instance via <code>register_toolchains(...)</code> against the
-<code>//vivado:toolchain_type</code> toolchain type so every <code>vivado_*</code> rule automatically
-resolves the Xilinx environment.</p>
-<h1 id="quickstart"><a class="header" href="#quickstart">Quickstart</a></h1>
-<ol>
-<li>
-<p>Author a small bash shim that <code>exec</code>s your Vivado install. The shim is
-the file Bazel tracks; it hard-codes the install path (typically a fixed
-location baked into a container image):</p>
-<pre><code class="language-bash">#!/usr/bin/env bash
-# tools/vivado/vivado.sh
-exec /opt/Xilinx/Vivado/2024.2/bin/vivado "$@"
-</code></pre>
-<p>Mark it executable: <code>chmod +x tools/vivado/vivado.sh</code>.</p>
-</li>
-<li>
-<p>Declare a <code>vivado_toolchain</code> and a <code>toolchain()</code> wrapper in BUILD, pointing
-at the shim. Put your license server and any extra env in <code>env</code>:</p>
-<pre><code class="language-starlark">load("@rules_vivado//vivado:toolchain.bzl", "vivado_toolchain")
-
-vivado_toolchain(
-    name = "vivado_local",
-    vivado = "vivado.sh",
-    env = {
-        "XILINXD_LICENSE_FILE": "2100@license.example.com",
-        "HOME": "/tmp",
-    },
-)
-
-toolchain(
-    name = "vivado_toolchain",
-    toolchain = ":vivado_local",
-    toolchain_type = "@rules_vivado//vivado:toolchain_type",
-)
-</code></pre>
-</li>
-<li>
-<p>Register it from MODULE.bazel:</p>
-<pre><code class="language-starlark">register_toolchains("//tools/vivado:vivado_toolchain")
-</code></pre>
-</li>
-</ol>
-<p>Every <code>vivado_*</code> rule resolves this toolchain automatically.</p>
-<p><code>xilinx_env</code> is an optional escape hatch — a shell script sourced inside the
-action immediately before <code>vivado</code> runs — for shell-side env composition
-neither <code>env</code> nor the shim itself covers. Prefer <code>env</code> and the shim's own
-preamble first.</p>
-<h1 id="constraining-toolchains"><a class="header" href="#constraining-toolchains">Constraining toolchains</a></h1>
-<p>Register multiple <code>vivado_toolchain</code> instances side-by-side and let Bazel pick
-one per action via <code>exec_compatible_with</code> against the per-version
-<code>constraint_value</code>s in <code>//vivado/constraints/BUILD.bazel</code>. Each constraint
-corresponds to one entry in <code>//vivado/private:versions.bzl</code> VIVADO_VERSIONS.</p>
-<pre><code class="language-starlark">load("@rules_vivado//vivado:toolchain.bzl", "vivado_toolchain")
-
-vivado_toolchain(
-    name = "vivado_2024_2",
-    vivado = "vivado_2024_2.sh",
-)
-
-toolchain(
-    name = "vivado_toolchain_2024_2",
-    exec_compatible_with = ["@rules_vivado//vivado/constraints/version:2024.2"],
-    toolchain = ":vivado_2024_2",
-    toolchain_type = "@rules_vivado//vivado:toolchain_type",
-)
-
-platform(
-    name = "vivado_2024_2_platform",
-    constraint_values = ["@rules_vivado//vivado/constraints/version:2024.2"],
-    exec_properties = {
-        "container-image": "docker://your.registry/vivado:2024.2",
-    },
-    parents = ["@platforms//host"],
-)
-</code></pre>
-<p>Register both the toolchain and the platform from <code>MODULE.bazel</code>:</p>
-<pre><code class="language-starlark">register_toolchains("//tools/vivado:vivado_toolchain_2024_2")
-register_execution_platforms("//tools/vivado:vivado_2024_2_platform")
-</code></pre>
-<p>The first registered exec platform becomes the default. Switch versions per
-build with <code>--platforms=//tools/vivado:vivado_2024_2_platform</code> (which also lets
-<code>target_compatible_with = ["@rules_vivado//vivado/constraints/version:2024.2"]</code>
-on a target evaluate against the right constraint), or use a wrapper rule with
-<code>cfg = transition(...)</code> to switch per target. See
-<code>//tests/transition.bzl</code> for an example <code>with_vivado_version</code> wrapper.</p>
 <h2 id="rules"><a class="header" href="#rules">Rules</a></h2>
 <ul>
 <li><a href="#vivado_toolchain">vivado_toolchain</a></li>
@@ -256,23 +170,28 @@ on a target evaluate against the right constraint), or use a wrapper rule with
 <pre>
 load("@rules_vivado//vivado:toolchain.bzl", "vivado_toolchain")
 
-vivado_toolchain(<a href="#vivado_toolchain-name">name</a>, <a href="#vivado_toolchain-env">env</a>, <a href="#vivado_toolchain-requires_network">requires_network</a>, <a href="#vivado_toolchain-version">version</a>, <a href="#vivado_toolchain-vivado">vivado</a>, <a href="#vivado_toolchain-xilinx_env">xilinx_env</a>)
+vivado_toolchain(<a href="#vivado_toolchain-name">name</a>, <a href="#vivado_toolchain-resources">resources</a>, <a href="#vivado_toolchain-env">env</a>, <a href="#vivado_toolchain-requires_network">requires_network</a>, <a href="#vivado_toolchain-sanitizer">sanitizer</a>, <a href="#vivado_toolchain-version">version</a>, <a href="#vivado_toolchain-vivado">vivado</a>, <a href="#vivado_toolchain-xilinx_env">xilinx_env</a>)
 </pre>
 <p>Declares a Vivado toolchain.</p>
-<p>Wrap with <code>toolchain(...)</code> and register via <code>register_toolchains(...)</code> in
-MODULE.bazel so every <code>vivado_*</code> rule resolves it automatically. Multiple
-instances can be registered side-by-side and selected via <code>target_settings</code>
-(flag-driven) or <code>exec_compatible_with</code> (platform-driven). See the
-<code>//vivado:toolchain.bzl</code> module docstring and the rules_vivado README for full
-walkthroughs.</p>
+<p>Wrap it with <code>toolchain(...)</code> and register that via
+<code>register_toolchains(...)</code> in MODULE.bazel; every <code>vivado_*</code> rule then
+resolves the Xilinx environment automatically, with no per-target
+<code>xilinx_env</code> to thread through. Registering one is required.</p>
+<p>Multiple instances can be registered side-by-side and selected via
+<code>target_settings</code> (flag-driven) or <code>exec_compatible_with</code>
+(platform-driven) — the latter against the per-version <code>constraint_value</code>s
+in <code>//vivado/constraints/version</code>.</p>
+<p>Emits <code>VivadoToolchainInfo</code> on <code>ToolchainInfo.vivado_info</code>.</p>
 <p><strong>ATTRIBUTES</strong></p>
 <div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
 <tr><td style="text-align: left"><a id="vivado_toolchain-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
+<tr><td style="text-align: left"><a id="vivado_toolchain-resources"></a>resources</td><td style="text-align: left"><code>--local_resources</code> slots every Vivado action claims: resource name -&gt; per-action count (as a string). Each entry becomes <code>execution_requirements["resources:&lt;name&gt;"] = &lt;count&gt;</code>, letting you serialize Vivado runs against a budget declared with <code>--local_resources=&lt;name&gt;=&lt;total&gt;</code> — license seats, container concurrency, whatever. <code>{"vivado_license": "1"}</code> is the common case. Every name used here needs a matching <code>--local_resources</code> registration or actions fail to schedule. Empty by default, so actions schedule freely.</td><td style="text-align: left"><a href="https://bazel.build/rules/lib/dict">Dictionary: String -&gt; String</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>{}</code></td></tr>
 <tr><td style="text-align: left"><a id="vivado_toolchain-env"></a>env</td><td style="text-align: left">Environment variables passed to every Vivado action.</td><td style="text-align: left"><a href="https://bazel.build/rules/lib/dict">Dictionary: String -&gt; String</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>{}</code></td></tr>
-<tr><td style="text-align: left"><a id="vivado_toolchain-requires_network"></a>requires_network</td><td style="text-align: left">Whether Vivado actions need network access. True (the default) is correct for a floating/network license server (<code>XILINXD_LICENSE_FILE=PORT@HOST</code>). Set to False for license-free editions (Vivado ML Standard / WebPACK) or node-locked .lic files read from disk. Controls whether the <code>requires-network</code> execution requirement is set on every <code>vivado_*</code> action.</td><td style="text-align: left">Boolean</td><td style="text-align: left">optional</td><td style="text-align: left"><code>True</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_toolchain-requires_network"></a>requires_network</td><td style="text-align: left">Sets the <code>requires-network</code> execution requirement on every <code>vivado_*</code> action. True (the default) is correct for a floating license server (<code>XILINXD_LICENSE_FILE=PORT@HOST</code>); set it False for license-free editions (Vivado ML Standard / WebPACK) or node-locked <code>.lic</code> files read from disk.</td><td style="text-align: left">Boolean</td><td style="text-align: left">optional</td><td style="text-align: left"><code>True</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_toolchain-sanitizer"></a>sanitizer</td><td style="text-align: left">Executable called from every Vivado action's EXIT trap to rewrite the sandbox-root prefix baked into declared outputs with the fixed marker <code>&lt;execroot&gt;/</code>. That makes outputs byte-identical across hosts, sandbox strategies, and RBE-worker sandbox UUIDs, so caches hit and shipped artifacts don't leak a worker's path.<br><br>Invoked as <code>&lt;sanitizer&gt; &lt;sandbox_root&gt; &lt;marker&gt; &lt;path&gt;...</code>, where each path is a declared output — a file, or a TreeArtifact directory to walk. Its exit status is ignored: sanitization must never fail an otherwise-successful Vivado run.<br><br>Built for the exec platform and staged with its runfiles, so any <code>*_binary</code> works; the default is a <code>sh_binary</code> doing a <code>sed</code> sweep that skips known binary formats. Override only for custom semantics.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:sanitize_paths"</code></td></tr>
 <tr><td style="text-align: left"><a id="vivado_toolchain-version"></a>version</td><td style="text-align: left">The version of Vivado associated with this toolchain.</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>""</code></td></tr>
 <tr><td style="text-align: left"><a id="vivado_toolchain-vivado"></a>vivado</td><td style="text-align: left">The Vivado executable. Typically a small bash shim that <code>exec</code>s the real <code>vivado</code> out of a known install path (e.g. baked into a container image), but any <code>*_binary</code> rule works too — runfiles travel along. Defaults to a stock shim that calls <code>vivado</code> from the exec platform's <code>PATH</code> as a migration aid; production toolchains should pin the install path with their own shim.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:vivado.sh"</code></td></tr>
-<tr><td style="text-align: left"><a id="vivado_toolchain-xilinx_env"></a>xilinx_env</td><td style="text-align: left">Optional escape hatch — a shell script sourced inside the action shell immediately before <code>vivado</code> runs, for shell-side env composition <code>env</code> cannot express. Prefer <code>env</code>.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>None</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_toolchain-xilinx_env"></a>xilinx_env</td><td style="text-align: left">Optional escape hatch — a shell script sourced inside the action shell immediately before <code>vivado</code> runs, for shell-side env composition <code>env</code> cannot express. Prefer <code>env</code>. <code>vivado_xsim_test</code> also sources it at test time to put <code>xvlog</code> / <code>xelab</code> / <code>xsim</code> on <code>PATH</code>.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>None</code></td></tr>
 </tbody></table>
 </div>
 <p><a id="VivadoToolchainInfo"></a></p>
@@ -280,16 +199,18 @@ walkthroughs.</p>
 <pre>
 load("@rules_vivado//vivado:toolchain.bzl", "VivadoToolchainInfo")
 
-VivadoToolchainInfo(<a href="#VivadoToolchainInfo-env">env</a>, <a href="#VivadoToolchainInfo-requires_network">requires_network</a>, <a href="#VivadoToolchainInfo-version">version</a>, <a href="#VivadoToolchainInfo-vivado">vivado</a>, <a href="#VivadoToolchainInfo-xilinx_env">xilinx_env</a>)
+VivadoToolchainInfo(*, <a href="#VivadoToolchainInfo-vivado">vivado</a>, <a href="#VivadoToolchainInfo-env">env</a>, <a href="#VivadoToolchainInfo-requires_network">requires_network</a>, <a href="#VivadoToolchainInfo-resources">resources</a>, <a href="#VivadoToolchainInfo-sanitizer">sanitizer</a>, <a href="#VivadoToolchainInfo-version">version</a>, <a href="#VivadoToolchainInfo-xilinx_env">xilinx_env</a>)
 </pre>
-<p>Toolchain info for the Xilinx Vivado tool.</p>
+<p>Toolchain info for the Xilinx Vivado tool. Only <code>vivado</code> is required; every other field has a default so toolchain rules outside this repo keep working when fields are added.</p>
 <p><strong>FIELDS</strong></p>
-<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th></tr></thead><tbody>
-<tr><td style="text-align: left"><a id="VivadoToolchainInfo-env"></a>env</td><td style="text-align: left">dict[str, str]: environment variables passed to every Vivado action.</td></tr>
-<tr><td style="text-align: left"><a id="VivadoToolchainInfo-requires_network"></a>requires_network</td><td style="text-align: left">bool: whether Vivado actions need network access (typically for a network license server).</td></tr>
-<tr><td style="text-align: left"><a id="VivadoToolchainInfo-version"></a>version</td><td style="text-align: left">str: The version of Vivado associated with this toolchain.</td></tr>
-<tr><td style="text-align: left"><a id="VivadoToolchainInfo-vivado"></a>vivado</td><td style="text-align: left">FilesToRunProvider: the executable Bazel invokes for every Vivado action. Passed via <code>tools=</code> so runfiles travel along. Typically a small shim that <code>exec</code>s the real <code>vivado</code> binary out of the install location (often a fixed path inside a container image), but any <code>*_binary</code> rule works too.</td></tr>
-<tr><td style="text-align: left"><a id="VivadoToolchainInfo-xilinx_env"></a>xilinx_env</td><td style="text-align: left">File or None: optional shell script sourced inside the action shell immediately before <code>vivado</code> runs. Escape hatch for shell-side env composition <code>env</code> cannot express.</td></tr>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Default Value</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="VivadoToolchainInfo-vivado"></a>vivado</td><td style="text-align: left">FilesToRunProvider: executable Bazel invokes for every Vivado action. Typically a shim that <code>exec</code>s the real <code>vivado</code> binary. Required.</td><td style="text-align: left">none</td></tr>
+<tr><td style="text-align: left"><a id="VivadoToolchainInfo-env"></a>env</td><td style="text-align: left">dict[str, str]: environment variables passed to every Vivado action. Default <code>{}</code>.</td><td style="text-align: left"><code>{}</code></td></tr>
+<tr><td style="text-align: left"><a id="VivadoToolchainInfo-requires_network"></a>requires_network</td><td style="text-align: left">bool: whether Vivado actions need network access (typically for a network license server). Default <code>True</code>.</td><td style="text-align: left"><code>True</code></td></tr>
+<tr><td style="text-align: left"><a id="VivadoToolchainInfo-resources"></a>resources</td><td style="text-align: left">dict[str, str]: optional <code>--local_resources</code> slots every Vivado action claims (values are counts as strings). Each entry becomes an <code>execution_requirements["resources:&lt;name&gt;"] = &lt;count&gt;</code> on every action, so users can serialize Vivado runs against arbitrary budgets they've declared via <code>--local_resources=&lt;name&gt;=&lt;total&gt;</code> (e.g. license seats, container concurrency). Empty by default — actions schedule freely against <code>cpu</code> / <code>memory</code> only.</td><td style="text-align: left"><code>{}</code></td></tr>
+<tr><td style="text-align: left"><a id="VivadoToolchainInfo-sanitizer"></a>sanitizer</td><td style="text-align: left">FilesToRunProvider or None: executable invoked from every Vivado action's EXIT trap to rewrite the sandbox-root prefix in declared outputs. <code>vivado_toolchain</code> wires in the bundled default; <code>None</code> (the constructor default) leaves outputs unsanitized, which still builds but caches less well across hosts.</td><td style="text-align: left"><code>None</code></td></tr>
+<tr><td style="text-align: left"><a id="VivadoToolchainInfo-version"></a>version</td><td style="text-align: left">str: The version of Vivado associated with this toolchain. Default <code>""</code>.</td><td style="text-align: left"><code>""</code></td></tr>
+<tr><td style="text-align: left"><a id="VivadoToolchainInfo-xilinx_env"></a>xilinx_env</td><td style="text-align: left">File or None: optional shell script sourced immediately before <code>vivado</code> runs, for shell-side env composition <code>env</code> cannot express. Default <code>None</code>.</td><td style="text-align: left"><code>None</code></td></tr>
 </tbody></table>
 </div>
                     </main>
@@ -300,7 +221,7 @@ VivadoToolchainInfo(<a href="#VivadoToolchainInfo-env">env</a>, <a href="#Vivado
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="rules.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="flow.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -314,7 +235,7 @@ VivadoToolchainInfo(<a href="#VivadoToolchainInfo-env">env</a>, <a href="#Vivado
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="rules.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="flow.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
@@ -338,6 +259,8 @@ VivadoToolchainInfo(<a href="#VivadoToolchainInfo-env">env</a>, <a href="#Vivado
         <script src="book.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="mermaid.min.js"></script>
+        <script src="mermaid-init.js"></script>
 
 
     </div>

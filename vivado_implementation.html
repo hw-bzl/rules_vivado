@@ -168,15 +168,19 @@
 <pre>
 load("@rules_vivado//vivado:implementation.bzl", "vivado_place_optimize")
 
-vivado_place_optimize(<a href="#vivado_place_optimize-name">name</a>, <a href="#vivado_place_optimize-checkpoint">checkpoint</a>, <a href="#vivado_place_optimize-phys_opt_directive">phys_opt_directive</a>, <a href="#vivado_place_optimize-place_optimize_template">place_optimize_template</a>, <a href="#vivado_place_optimize-threads">threads</a>)
+vivado_place_optimize(<a href="#vivado_place_optimize-name">name</a>, <a href="#vivado_place_optimize-checkpoint">checkpoint</a>, <a href="#vivado_place_optimize-phys_opt_args">phys_opt_args</a>, <a href="#vivado_place_optimize-place_optimize_template">place_optimize_template</a>, <a href="#vivado_place_optimize-post_hooks">post_hooks</a>,
+                      <a href="#vivado_place_optimize-pre_hooks">pre_hooks</a>, <a href="#vivado_place_optimize-reports">reports</a>, <a href="#vivado_place_optimize-threads">threads</a>)
 </pre>
 <p>Run post-placement physical optimization.</p>
 <p><strong>ATTRIBUTES</strong></p>
 <div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
 <tr><td style="text-align: left"><a id="vivado_place_optimize-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
 <tr><td style="text-align: left"><a id="vivado_place_optimize-checkpoint"></a>checkpoint</td><td style="text-align: left">Placement checkpoint.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
-<tr><td style="text-align: left"><a id="vivado_place_optimize-phys_opt_directive"></a>phys_opt_directive</td><td style="text-align: left">The optimization directive.</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>"AggressiveExplore"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_place_optimize-phys_opt_args"></a>phys_opt_args</td><td style="text-align: left">Extra flags passed through to <code>phys_opt_design</code>.</td><td style="text-align: left">List of strings</td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
 <tr><td style="text-align: left"><a id="vivado_place_optimize-place_optimize_template"></a>place_optimize_template</td><td style="text-align: left">The placement tcl template</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:place_optimize.tcl.template"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_place_optimize-post_hooks"></a>post_hooks</td><td style="text-align: left"><code>.tcl</code>/<code>.xdc</code>/<code>.sdc</code> files OR <code>tcl_binary</code> targets sourced after <code>phys_opt_design</code>, in list order.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_place_optimize-pre_hooks"></a>pre_hooks</td><td style="text-align: left"><code>.tcl</code>/<code>.xdc</code>/<code>.sdc</code> files OR <code>tcl_binary</code> targets sourced on the opened checkpoint before <code>phys_opt_design</code>.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_place_optimize-reports"></a>reports</td><td style="text-align: left">Report types to run after the phase's main transformation. See <code>vivado_synthesis.reports</code> for the full API.</td><td style="text-align: left">List of strings</td><td style="text-align: left">optional</td><td style="text-align: left"><code>["timing_summary", "utilization"]</code></td></tr>
 <tr><td style="text-align: left"><a id="vivado_place_optimize-threads"></a>threads</td><td style="text-align: left">Threads to pass to vivado which defines the amount of parallelism.</td><td style="text-align: left">Integer</td><td style="text-align: left">optional</td><td style="text-align: left"><code>8</code></td></tr>
 </tbody></table>
 </div>
@@ -185,15 +189,19 @@ vivado_place_optimize(<a href="#vivado_place_optimize-name">name</a>, <a href="#
 <pre>
 load("@rules_vivado//vivado:implementation.bzl", "vivado_placement")
 
-vivado_placement(<a href="#vivado_placement-name">name</a>, <a href="#vivado_placement-checkpoint">checkpoint</a>, <a href="#vivado_placement-placement_directive">placement_directive</a>, <a href="#vivado_placement-placement_template">placement_template</a>, <a href="#vivado_placement-threads">threads</a>)
+vivado_placement(<a href="#vivado_placement-name">name</a>, <a href="#vivado_placement-checkpoint">checkpoint</a>, <a href="#vivado_placement-place_args">place_args</a>, <a href="#vivado_placement-placement_template">placement_template</a>, <a href="#vivado_placement-post_hooks">post_hooks</a>, <a href="#vivado_placement-pre_hooks">pre_hooks</a>, <a href="#vivado_placement-reports">reports</a>,
+                 <a href="#vivado_placement-threads">threads</a>)
 </pre>
 <p>Run placement on a (synthesis-optimized) checkpoint.</p>
 <p><strong>ATTRIBUTES</strong></p>
 <div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
 <tr><td style="text-align: left"><a id="vivado_placement-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
 <tr><td style="text-align: left"><a id="vivado_placement-checkpoint"></a>checkpoint</td><td style="text-align: left">Synthesis checkpoint.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
-<tr><td style="text-align: left"><a id="vivado_placement-placement_directive"></a>placement_directive</td><td style="text-align: left">The optimization directive.</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>"Explore"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_placement-place_args"></a>place_args</td><td style="text-align: left">Extra flags passed through to <code>place_design</code>.</td><td style="text-align: left">List of strings</td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
 <tr><td style="text-align: left"><a id="vivado_placement-placement_template"></a>placement_template</td><td style="text-align: left">The placement tcl template</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:placement.tcl.template"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_placement-post_hooks"></a>post_hooks</td><td style="text-align: left"><code>.tcl</code>/<code>.xdc</code>/<code>.sdc</code> files OR <code>tcl_binary</code> targets sourced after <code>place_design</code>, in list order.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_placement-pre_hooks"></a>pre_hooks</td><td style="text-align: left"><code>.tcl</code>/<code>.xdc</code>/<code>.sdc</code> files OR <code>tcl_binary</code> targets sourced on the opened checkpoint before <code>place_design</code>.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_placement-reports"></a>reports</td><td style="text-align: left">Report types to run after the phase's main transformation. See <code>vivado_synthesis.reports</code> for the full API.</td><td style="text-align: left">List of strings</td><td style="text-align: left">optional</td><td style="text-align: left"><code>["timing_summary", "utilization"]</code></td></tr>
 <tr><td style="text-align: left"><a id="vivado_placement-threads"></a>threads</td><td style="text-align: left">Threads to pass to vivado which defines the amount of parallelism.</td><td style="text-align: left">Integer</td><td style="text-align: left">optional</td><td style="text-align: left"><code>8</code></td></tr>
 </tbody></table>
 </div>
@@ -202,14 +210,18 @@ vivado_placement(<a href="#vivado_placement-name">name</a>, <a href="#vivado_pla
 <pre>
 load("@rules_vivado//vivado:implementation.bzl", "vivado_routing")
 
-vivado_routing(<a href="#vivado_routing-name">name</a>, <a href="#vivado_routing-checkpoint">checkpoint</a>, <a href="#vivado_routing-route_directive">route_directive</a>, <a href="#vivado_routing-route_template">route_template</a>, <a href="#vivado_routing-threads">threads</a>)
+vivado_routing(<a href="#vivado_routing-name">name</a>, <a href="#vivado_routing-checkpoint">checkpoint</a>, <a href="#vivado_routing-post_hooks">post_hooks</a>, <a href="#vivado_routing-pre_hooks">pre_hooks</a>, <a href="#vivado_routing-reports">reports</a>, <a href="#vivado_routing-route_args">route_args</a>, <a href="#vivado_routing-route_template">route_template</a>,
+               <a href="#vivado_routing-threads">threads</a>)
 </pre>
 <p>Run routing on a placement checkpoint.</p>
 <p><strong>ATTRIBUTES</strong></p>
 <div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th><th style="text-align: left">Type</th><th style="text-align: left">Mandatory</th><th style="text-align: left">Default</th></tr></thead><tbody>
 <tr><td style="text-align: left"><a id="vivado_routing-name"></a>name</td><td style="text-align: left">A unique name for this target.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels#target-names">Name</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
 <tr><td style="text-align: left"><a id="vivado_routing-checkpoint"></a>checkpoint</td><td style="text-align: left">Placement checkpoint.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">required</td><td style="text-align: left"></td></tr>
-<tr><td style="text-align: left"><a id="vivado_routing-route_directive"></a>route_directive</td><td style="text-align: left">The routing directive.</td><td style="text-align: left">String</td><td style="text-align: left">optional</td><td style="text-align: left"><code>"Explore"</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_routing-post_hooks"></a>post_hooks</td><td style="text-align: left"><code>.tcl</code>/<code>.xdc</code>/<code>.sdc</code> files OR <code>tcl_binary</code> targets sourced after <code>route_design</code>, in list order.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_routing-pre_hooks"></a>pre_hooks</td><td style="text-align: left"><code>.tcl</code>/<code>.xdc</code>/<code>.sdc</code> files OR <code>tcl_binary</code> targets sourced on the opened checkpoint before <code>route_design</code>.</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">List of labels</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_routing-reports"></a>reports</td><td style="text-align: left">Report types to run after the phase's main transformation. See <code>vivado_synthesis.reports</code> for the full API.</td><td style="text-align: left">List of strings</td><td style="text-align: left">optional</td><td style="text-align: left"><code>["io", "power", "route_status", "timing_summary", "utilization"]</code></td></tr>
+<tr><td style="text-align: left"><a id="vivado_routing-route_args"></a>route_args</td><td style="text-align: left">Extra flags passed through to <code>route_design</code>.</td><td style="text-align: left">List of strings</td><td style="text-align: left">optional</td><td style="text-align: left"><code>[]</code></td></tr>
 <tr><td style="text-align: left"><a id="vivado_routing-route_template"></a>route_template</td><td style="text-align: left">The routing tcl template</td><td style="text-align: left"><a href="https://bazel.build/concepts/labels">Label</a></td><td style="text-align: left">optional</td><td style="text-align: left"><code>"@rules_vivado//vivado/private:route.tcl.template"</code></td></tr>
 <tr><td style="text-align: left"><a id="vivado_routing-threads"></a>threads</td><td style="text-align: left">Threads to pass to vivado which defines the amount of parallelism.</td><td style="text-align: left">Integer</td><td style="text-align: left">optional</td><td style="text-align: left"><code>8</code></td></tr>
 </tbody></table>
@@ -260,6 +272,8 @@ vivado_routing(<a href="#vivado_routing-name">name</a>, <a href="#vivado_routing
         <script src="book.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="mermaid.min.js"></script>
+        <script src="mermaid-init.js"></script>
 
 
     </div>

@@ -179,18 +179,13 @@ without the license server, so be deliberate here.</p>
 <h2 id="constraining-toolchains"><a class="header" href="#constraining-toolchains">Constraining toolchains</a></h2>
 <p>To run multiple Vivado versions side-by-side, gate each
 <code>vivado_toolchain</code> with one of the per-version <code>constraint_value</code>s in
-<a href="https://github.com/hw-bzl/rules_vivado/blob/main/vivado/constraints/BUILD.bazel"><code>//vivado/constraints/BUILD.bazel</code></a>.
+<a href="https://github.com/hw-bzl/rules_vivado/blob/main/vivado/constraints/version/BUILD.bazel"><code>//vivado/constraints/version</code></a>.
 Each constraint corresponds to one entry in <code>VIVADO_VERSIONS</code> (defined
 in
 <a href="https://github.com/hw-bzl/rules_vivado/blob/main/vivado/private/versions.bzl"><code>//vivado/private:versions.bzl</code></a>).
 The <a href="./vivado_toolchain.html"><code>vivado_toolchain</code></a> docstring has the
 full multi-version walkthrough — <code>platform(...)</code> setup,
 <code>register_execution_platforms</code>, and the <code>--platforms</code> switch.</p>
-<p>For per-target switching without a global flag, use a wrapper rule
-with <code>cfg = transition(...)</code>; see
-<a href="https://github.com/hw-bzl/rules_vivado/blob/main/tests/transition.bzl"><code>tests/transition.bzl</code></a>
-for a <code>with_vivado_version</code> wrapper that takes a list of targets and
-pins the version for the whole group.</p>
 <p>Constraints are the only mechanism — there is no parallel build-setting
 / flag-driven path. This keeps per-version metadata (constraints,
 <code>exec_properties</code> like <code>container-image</code>) all on the platform object
@@ -246,6 +241,8 @@ resolved provider that downstream rules consume.</p>
         <script src="book.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="mermaid.min.js"></script>
+        <script src="mermaid-init.js"></script>
 
 
     </div>

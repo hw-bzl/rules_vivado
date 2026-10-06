@@ -159,28 +159,111 @@
 <h1 id="vivado-providers"><a class="header" href="#vivado-providers">Vivado providers.</a></h1>
 <h2 id="providers"><a class="header" href="#providers">Providers</a></h2>
 <ul>
+<li><a href="#VivadoBlockDesignInfo">VivadoBlockDesignInfo</a></li>
+<li><a href="#VivadoCompiledSimlibInfo">VivadoCompiledSimlibInfo</a></li>
+<li><a href="#VivadoDebugProbesInfo">VivadoDebugProbesInfo</a></li>
+<li><a href="#VivadoExportSimulationInfo">VivadoExportSimulationInfo</a></li>
+<li><a href="#VivadoHwPlatformInfo">VivadoHwPlatformInfo</a></li>
 <li><a href="#VivadoIPBlockInfo">VivadoIPBlockInfo</a></li>
 <li><a href="#VivadoInterfaceInfo">VivadoInterfaceInfo</a></li>
+<li><a href="#VivadoLogInfo">VivadoLogInfo</a></li>
 <li><a href="#VivadoPlacementCheckpointInfo">VivadoPlacementCheckpointInfo</a></li>
+<li><a href="#VivadoProjectInfo">VivadoProjectInfo</a></li>
+<li><a href="#VivadoReportsInfo">VivadoReportsInfo</a></li>
 <li><a href="#VivadoRoutingCheckpointInfo">VivadoRoutingCheckpointInfo</a></li>
 <li><a href="#VivadoSynthCheckpointInfo">VivadoSynthCheckpointInfo</a></li>
+<li><a href="#XdcInfo">XdcInfo</a></li>
 </ul>
+<p><a id="VivadoBlockDesignInfo"></a></p>
+<h2 id="vivadoblockdesigninfo"><a class="header" href="#vivadoblockdesigninfo">VivadoBlockDesignInfo</a></h2>
+<pre>
+load("@rules_vivado//vivado:providers.bzl", "VivadoBlockDesignInfo")
+
+VivadoBlockDesignInfo(<a href="#VivadoBlockDesignInfo-bd_dir">bd_dir</a>, <a href="#VivadoBlockDesignInfo-ip_block_repos">ip_block_repos</a>, <a href="#VivadoBlockDesignInfo-module_top">module_top</a>, <a href="#VivadoBlockDesignInfo-project_hooks">project_hooks</a>)
+</pre>
+<p>Info for a Vivado block design (.bd) produced by <code>vivado_block_design</code>.</p>
+<p><strong>FIELDS</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="VivadoBlockDesignInfo-bd_dir"></a>bd_dir</td><td style="text-align: left">File: tree-artifact directory containing the generated <code>.bd</code> and its supporting files. The <code>.bd</code> itself is normalized to <code>&lt;bd_dir&gt;/&lt;module_top&gt;.bd</code> by the rule.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoBlockDesignInfo-ip_block_repos"></a>ip_block_repos</td><td style="text-align: left">list[File]: IP repo directories from <code>ip_blocks</code> deps that must be added to the consuming project's <code>ip_repo_paths</code> for the BD to resolve.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoBlockDesignInfo-module_top"></a>module_top</td><td style="text-align: left">string: The block-design name (the argument to <code>create_bd_design</code> in the source TCL). Consumers use <code>&lt;bd_dir&gt;/&lt;module_top&gt;.bd</code> to find the file.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoBlockDesignInfo-project_hooks"></a>project_hooks</td><td style="text-align: left">list[Target]: hook Targets this target contributes as <code>project_hooks</code> to any downstream <code>vivado_project</code> that lists it in <code>ip_blocks</code> / <code>block_designs</code>. The consumer passes the merged Target list through <code>hook_invocation</code> to derive both the sourceable paths (for the emitted TCL) and the tools list (for <code>run_shell(tools = ...)</code> staging). Sourced right after <code>create_project</code> + <code>source_mgmt_mode</code> and before the project's own <code>pre_hooks_early</code>. Empty when the target declares no <code>project_hooks</code>.</td></tr>
+</tbody></table>
+</div>
+<p><a id="VivadoCompiledSimlibInfo"></a></p>
+<h2 id="vivadocompiledsimlibinfo"><a class="header" href="#vivadocompiledsimlibinfo">VivadoCompiledSimlibInfo</a></h2>
+<pre>
+load("@rules_vivado//vivado:providers.bzl", "VivadoCompiledSimlibInfo")
+
+VivadoCompiledSimlibInfo(<a href="#VivadoCompiledSimlibInfo-simlib_dir">simlib_dir</a>, <a href="#VivadoCompiledSimlibInfo-simulator">simulator</a>)
+</pre>
+<p>Output of <code>vivado_compile_simlib</code>. Layout matches <code>compile_simlib -directory &lt;dir&gt;</code>: <code>&lt;simlib_dir&gt;/&lt;simulator&gt;/</code> contains the simulator's link-config file plus per-library compiled artifacts.</p>
+<p><strong>FIELDS</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="VivadoCompiledSimlibInfo-simlib_dir"></a>simlib_dir</td><td style="text-align: left">File: TreeArtifact directory containing the compiled simlib. The link-config file lives at <code>&lt;simlib_dir&gt;/&lt;simulator&gt;/&lt;link_config_basename&gt;</code> (e.g. <code>&lt;simlib_dir&gt;/riviera/library.cfg</code>).</td></tr>
+<tr><td style="text-align: left"><a id="VivadoCompiledSimlibInfo-simulator"></a>simulator</td><td style="text-align: left">string: The simulator the simlib targets. One of Vivado's <code>compile_simlib -simulator</code> choices.</td></tr>
+</tbody></table>
+</div>
+<p><a id="VivadoDebugProbesInfo"></a></p>
+<h2 id="vivadodebugprobesinfo"><a class="header" href="#vivadodebugprobesinfo">VivadoDebugProbesInfo</a></h2>
+<pre>
+load("@rules_vivado//vivado:providers.bzl", "VivadoDebugProbesInfo")
+
+VivadoDebugProbesInfo(<a href="#VivadoDebugProbesInfo-ltx">ltx</a>, <a href="#VivadoDebugProbesInfo-project_info">project_info</a>, <a href="#VivadoDebugProbesInfo-tcl">tcl</a>)
+</pre>
+<p>Output of <code>vivado_debug_probes</code>. Wraps <code>write_debug_probes</code>; produces the <code>.ltx</code> probe file consumed by Vivado's Hardware Manager during ILA bring-up.</p>
+<p><strong>FIELDS</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="VivadoDebugProbesInfo-ltx"></a>ltx</td><td style="text-align: left">File: the emitted <code>.ltx</code> debug-probes file.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoDebugProbesInfo-project_info"></a>project_info</td><td style="text-align: left">VivadoProjectInfo: typed back-reference to the originating project (through the checkpoint chain).</td></tr>
+<tr><td style="text-align: left"><a id="VivadoDebugProbesInfo-tcl"></a>tcl</td><td style="text-align: left">File: the fully-substituted TCL script the action sourced.</td></tr>
+</tbody></table>
+</div>
+<p><a id="VivadoExportSimulationInfo"></a></p>
+<h2 id="vivadoexportsimulationinfo"><a class="header" href="#vivadoexportsimulationinfo">VivadoExportSimulationInfo</a></h2>
+<pre>
+load("@rules_vivado//vivado:providers.bzl", "VivadoExportSimulationInfo")
+
+VivadoExportSimulationInfo(<a href="#VivadoExportSimulationInfo-export_dir">export_dir</a>, <a href="#VivadoExportSimulationInfo-project_info">project_info</a>, <a href="#VivadoExportSimulationInfo-simulator">simulator</a>, <a href="#VivadoExportSimulationInfo-tcl">tcl</a>)
+</pre>
+<p>Output of <code>vivado_export_simulation</code> — the directory Vivado writes when invoked with <code>export_simulation -directory &lt;dir&gt;</code>. Contents follow Vivado's contract for the chosen simulator (see UG835).</p>
+<p><strong>FIELDS</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="VivadoExportSimulationInfo-export_dir"></a>export_dir</td><td style="text-align: left">File: TreeArtifact directory containing the export.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoExportSimulationInfo-project_info"></a>project_info</td><td style="text-align: left">VivadoProjectInfo: typed back-reference to the originating project. Same purpose as on checkpoint providers.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoExportSimulationInfo-simulator"></a>simulator</td><td style="text-align: left">string: The <code>-simulator</code> argument passed to Vivado.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoExportSimulationInfo-tcl"></a>tcl</td><td style="text-align: left">File: the fully-substituted TCL script the action sourced. See <code>VivadoSynthCheckpointInfo.tcl</code>.</td></tr>
+</tbody></table>
+</div>
+<p><a id="VivadoHwPlatformInfo"></a></p>
+<h2 id="vivadohwplatforminfo"><a class="header" href="#vivadohwplatforminfo">VivadoHwPlatformInfo</a></h2>
+<pre>
+load("@rules_vivado//vivado:providers.bzl", "VivadoHwPlatformInfo")
+
+VivadoHwPlatformInfo(<a href="#VivadoHwPlatformInfo-project_info">project_info</a>, <a href="#VivadoHwPlatformInfo-tcl">tcl</a>, <a href="#VivadoHwPlatformInfo-xsa">xsa</a>)
+</pre>
+<p>Output of <code>vivado_hw_platform</code>. Wraps <code>write_hw_platform</code>; produces the <code>.xsa</code> handoff artifact consumed by Vitis, PetaLinux, and other Xilinx SDK tooling.</p>
+<p><strong>FIELDS</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="VivadoHwPlatformInfo-project_info"></a>project_info</td><td style="text-align: left">VivadoProjectInfo: typed back-reference to the originating project (through the checkpoint chain).</td></tr>
+<tr><td style="text-align: left"><a id="VivadoHwPlatformInfo-tcl"></a>tcl</td><td style="text-align: left">File: the fully-substituted TCL script the action sourced.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoHwPlatformInfo-xsa"></a>xsa</td><td style="text-align: left">File: the emitted <code>.xsa</code> hardware platform archive.</td></tr>
+</tbody></table>
+</div>
 <p><a id="VivadoIPBlockInfo"></a></p>
 <h2 id="vivadoipblockinfo"><a class="header" href="#vivadoipblockinfo">VivadoIPBlockInfo</a></h2>
 <pre>
 load("@rules_vivado//vivado:providers.bzl", "VivadoIPBlockInfo")
 
-VivadoIPBlockInfo(<a href="#VivadoIPBlockInfo-is_interface">is_interface</a>, <a href="#VivadoIPBlockInfo-library">library</a>, <a href="#VivadoIPBlockInfo-module_top">module_top</a>, <a href="#VivadoIPBlockInfo-repo">repo</a>, <a href="#VivadoIPBlockInfo-vendor">vendor</a>, <a href="#VivadoIPBlockInfo-version">version</a>)
+VivadoIPBlockInfo(<a href="#VivadoIPBlockInfo-configured_instance">configured_instance</a>, <a href="#VivadoIPBlockInfo-instantiable">instantiable</a>, <a href="#VivadoIPBlockInfo-project_hooks">project_hooks</a>, <a href="#VivadoIPBlockInfo-repo">repo</a>)
 </pre>
-<p>Info for a vivado ip block</p>
+<p>Describes the contents of a Vivado IP artifact. Consumers read the fields to decide whether to call <code>create_ip</code>, <code>add_files</code> a configured <code>.xci</code>, or just expose the repo on <code>ip_repo_paths</code>.</p>
 <p><strong>FIELDS</strong></p>
 <div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th></tr></thead><tbody>
-<tr><td style="text-align: left"><a id="VivadoIPBlockInfo-is_interface"></a>is_interface</td><td style="text-align: left">bool: True if this is an interface definition (repo-only, not instantiated via create_ip).</td></tr>
-<tr><td style="text-align: left"><a id="VivadoIPBlockInfo-library"></a>library</td><td style="text-align: left">string: The library that the ip block belongs to.</td></tr>
-<tr><td style="text-align: left"><a id="VivadoIPBlockInfo-module_top"></a>module_top</td><td style="text-align: left">string: The name of the ip block top module.</td></tr>
-<tr><td style="text-align: left"><a id="VivadoIPBlockInfo-repo"></a>repo</td><td style="text-align: left">list[File]: Directories containing the ip block (and any transitive ip block deps).</td></tr>
-<tr><td style="text-align: left"><a id="VivadoIPBlockInfo-vendor"></a>vendor</td><td style="text-align: left">string: The vendor of the ip block.</td></tr>
-<tr><td style="text-align: left"><a id="VivadoIPBlockInfo-version"></a>version</td><td style="text-align: left">string: The ip block version.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoIPBlockInfo-configured_instance"></a>configured_instance</td><td style="text-align: left">Optional[struct(repo_dir: File, xci_relpath: str, module_top: str)]: Set when the artifact contains a pre-configured IP instance. Consumers add <code>&lt;repo_dir&gt;/&lt;xci_relpath&gt;</code> to their source set. None when there is no configured instance.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoIPBlockInfo-instantiable"></a>instantiable</td><td style="text-align: left">Optional[struct(vendor: str, library: str, name: str, version: str, module_name: str)]: Set when consumers are expected to <code>create_ip</code> with these VLNV identifiers and <code>-module_name &lt;module_name&gt;</code>. None otherwise.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoIPBlockInfo-project_hooks"></a>project_hooks</td><td style="text-align: left">list[Target]: hook Targets this target contributes as <code>project_hooks</code> to any downstream <code>vivado_project</code> that lists it in <code>ip_blocks</code> / <code>block_designs</code>. The consumer passes the merged Target list through <code>hook_invocation</code> to derive both the sourceable paths (for the emitted TCL) and the tools list (for <code>run_shell(tools = ...)</code> staging). Sourced right after <code>create_project</code> + <code>source_mgmt_mode</code> and before the project's own <code>pre_hooks_early</code>. Empty when the target declares no <code>project_hooks</code>.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoIPBlockInfo-repo"></a>repo</td><td style="text-align: left">list[File]: Directory artifacts forming an IP repository (<code>component.xml</code>-rooted tree). Added to the consuming project's <code>ip_repo_paths</code>.</td></tr>
 </tbody></table>
 </div>
 <p><a id="VivadoInterfaceInfo"></a></p>
@@ -203,17 +286,70 @@ VivadoInterfaceInfo(<a href="#VivadoInterfaceInfo-abstraction_definition">abstra
 <tr><td style="text-align: left"><a id="VivadoInterfaceInfo-version"></a>version</td><td style="text-align: left">string: The version VLNV component.</td></tr>
 </tbody></table>
 </div>
+<p><a id="VivadoLogInfo"></a></p>
+<h2 id="vivadologinfo"><a class="header" href="#vivadologinfo">VivadoLogInfo</a></h2>
+<pre>
+load("@rules_vivado//vivado:providers.bzl", "VivadoLogInfo")
+
+VivadoLogInfo(<a href="#VivadoLogInfo-journals">journals</a>, <a href="#VivadoLogInfo-logs">logs</a>)
+</pre>
+<p>Aggregated Vivado <code>.log</code> and <code>.jou</code> files for a phase target and all its transitive upstream phases. Keys are short phase names (<code>synth</code>, <code>synth_opt</code>, <code>place</code>, <code>place_opt</code>, <code>route</code>, <code>write_bitstream</code>, <code>write_device_image</code>).</p>
+<p><strong>FIELDS</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="VivadoLogInfo-journals"></a>journals</td><td style="text-align: left">dict[str, File]: phase name -&gt; journal File.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoLogInfo-logs"></a>logs</td><td style="text-align: left">dict[str, File]: phase name -&gt; log File.</td></tr>
+</tbody></table>
+</div>
 <p><a id="VivadoPlacementCheckpointInfo"></a></p>
 <h2 id="vivadoplacementcheckpointinfo"><a class="header" href="#vivadoplacementcheckpointinfo">VivadoPlacementCheckpointInfo</a></h2>
 <pre>
 load("@rules_vivado//vivado:providers.bzl", "VivadoPlacementCheckpointInfo")
 
-VivadoPlacementCheckpointInfo(<a href="#VivadoPlacementCheckpointInfo-checkpoint">checkpoint</a>)
+VivadoPlacementCheckpointInfo(<a href="#VivadoPlacementCheckpointInfo-checkpoint">checkpoint</a>, <a href="#VivadoPlacementCheckpointInfo-input_files">input_files</a>, <a href="#VivadoPlacementCheckpointInfo-module_top">module_top</a>, <a href="#VivadoPlacementCheckpointInfo-part_number">part_number</a>, <a href="#VivadoPlacementCheckpointInfo-project_info">project_info</a>, <a href="#VivadoPlacementCheckpointInfo-tcl">tcl</a>)
 </pre>
-<p>Contains information at output of placement.</p>
+<p>Output of the placement phase (<code>vivado_placement</code> / <code>vivado_place_optimize</code>).</p>
 <p><strong>FIELDS</strong></p>
 <div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th></tr></thead><tbody>
-<tr><td style="text-align: left"><a id="VivadoPlacementCheckpointInfo-checkpoint"></a>checkpoint</td><td style="text-align: left">File: a Vivado placement checkpoint (.dcp).</td></tr>
+<tr><td style="text-align: left"><a id="VivadoPlacementCheckpointInfo-checkpoint"></a>checkpoint</td><td style="text-align: left">File: the Vivado checkpoint (.dcp) this phase emitted.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoPlacementCheckpointInfo-input_files"></a>input_files</td><td style="text-align: left">depset[File]: transitive files needed to re-open the checkpoint with <code>read_checkpoint</code> + <code>link_design</code>. Includes the upstream project's <code>input_files</code>, the upstream checkpoint file itself, and any impl-XDC bundle.<br><br>Most consumers do NOT need this. A <code>.dcp</code> is self-contained, so every in-tree phase rule that only <code>open_checkpoint</code>s (<code>vivado_placement</code>, <code>vivado_place_optimize</code>, <code>vivado_routing</code>, <code>vivado_synthesis_optimize</code>, <code>vivado_bitstream</code>, <code>vivado_device_image</code>, <code>vivado_hw_platform</code>, <code>vivado_debug_probes</code>) stages just the <code>.dcp</code> and keeps the action's input set small. Pass <code>input_files.to_list()</code> only when an action re-links the design against its original sources or re-sources the project script.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoPlacementCheckpointInfo-module_top"></a>module_top</td><td style="text-align: left">str: top-module name (propagated from the originating <code>vivado_project.module_top</code>). May be <code>""</code> if the upstream provider carried no top.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoPlacementCheckpointInfo-part_number"></a>part_number</td><td style="text-align: left">str: Xilinx part string (propagated from the originating <code>vivado_project.part_number</code>). Consumers use this to open the checkpoint on the correct part.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoPlacementCheckpointInfo-project_info"></a>project_info</td><td style="text-align: left">VivadoProjectInfo: typed back-reference to the originating project. Enables consumers to trace a checkpoint back to design intent (module tops, block designs, constraints) without needing a separate <code>project = ...</code> attr on every downstream rule.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoPlacementCheckpointInfo-tcl"></a>tcl</td><td style="text-align: left">File: the fully-substituted TCL script the action sourced. Useful for debugging (<code>bazel build //foo:x</code> produces this) and for reproducing the phase outside Bazel (<code>vivado -source &lt;this-file&gt;</code>).</td></tr>
+</tbody></table>
+</div>
+<p><a id="VivadoProjectInfo"></a></p>
+<h2 id="vivadoprojectinfo"><a class="header" href="#vivadoprojectinfo">VivadoProjectInfo</a></h2>
+<pre>
+load("@rules_vivado//vivado:providers.bzl", "VivadoProjectInfo")
+
+VivadoProjectInfo(<a href="#VivadoProjectInfo-block_designs">block_designs</a>, <a href="#VivadoProjectInfo-hook_tools">hook_tools</a>, <a href="#VivadoProjectInfo-input_files">input_files</a>, <a href="#VivadoProjectInfo-ip_blocks">ip_blocks</a>, <a href="#VivadoProjectInfo-module_top">module_top</a>, <a href="#VivadoProjectInfo-part_number">part_number</a>,
+                  <a href="#VivadoProjectInfo-project_tcl">project_tcl</a>, <a href="#VivadoProjectInfo-xdc">xdc</a>)
+</pre>
+<p>Output of <code>vivado_project</code>. Carries a self-contained TCL script (produced by Starlark template expansion, no Vivado invocation) that, when sourced inside a Vivado process, does <code>create_project</code> + source ingest + constraints + hooks (but NOT <code>generate_target</code> — the consumer picks that intent). Downstream consumers (<code>vivado_synthesis</code>, <code>vivado_export_simulation</code>, GUI launchers, <code>vivado_project_export</code>) source this script in their own Vivado action. The provider also carries the transitive input closure the script references, plus typed access to the sub-providers folded into the project, so consumers only need to depend on the <code>vivado_project</code> target — never on its individual inputs.</p>
+<p><strong>FIELDS</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="VivadoProjectInfo-block_designs"></a>block_designs</td><td style="text-align: left">list[VivadoBlockDesignInfo]: typed access to the block-design providers folded into the project via <code>block_designs = [...]</code>. Enables downstream rules (e.g. <code>vivado_bd_wrapper</code>, project-walking aspects) to reason about BDs by provider rather than reparsing the project script or re-reading rule attrs.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoProjectInfo-hook_tools"></a>hook_tools</td><td style="text-align: left">list: File / FilesToRunProvider entries for <code>pre_hooks_early</code> / <code>pre_hooks</code> / <code>post_hooks</code> targets. Consumers pass this list to <code>ctx.actions.run_shell(tools=...)</code> so hook runfiles trees (needed by <code>tcl_binary</code>-based hooks) materialize in the sandbox.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoProjectInfo-input_files"></a>input_files</td><td style="text-align: left">depset[File]: transitive files the emitted script references by exec-root path (HDL sources, IP repos, BD directories, constraint files, hook files). Any consumer that SOURCES <code>project_tcl</code> must pass <code>input_files.to_list()</code> as action inputs, or the sandbox won't stage what the script tries to open — <code>vivado_synthesis</code>, <code>vivado_project_export</code>, and the <code>export_simulation</code> rules all do. Consumers that only read a downstream checkpoint do NOT need it; see <code>_CHECKPOINT_COMMON_FIELDS.input_files</code> below.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoProjectInfo-ip_blocks"></a>ip_blocks</td><td style="text-align: left">list[VivadoIPBlockInfo]: typed access to the IP providers folded into the project via <code>ip_blocks = [...]</code>. Symmetric with <code>block_designs</code>.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoProjectInfo-module_top"></a>module_top</td><td style="text-align: left">str: top-module name (matches <code>vivado_project.module_top</code>).</td></tr>
+<tr><td style="text-align: left"><a id="VivadoProjectInfo-part_number"></a>part_number</td><td style="text-align: left">str: Xilinx part string (matches <code>vivado_project.part_number</code>).</td></tr>
+<tr><td style="text-align: left"><a id="VivadoProjectInfo-project_tcl"></a>project_tcl</td><td style="text-align: left">File: the emitted <code>.project.tcl</code> script. Sourcing this file inside a Vivado process does <code>create_project</code> + contributed <code>project_hooks</code> + <code>pre_hooks_early</code> + <code>read_verilog</code> / <code>read_vhdl</code> / <code>add_files</code> + <code>read_xdc</code> + <code>set_property top</code> + <code>pre_hooks</code>. It has no <code>post_hooks</code> and runs no <code>generate_target</code> — the consumer issues that with the intent it needs. Reads <code>PROJECT_MODE</code> / <code>PROJECT_DIR</code> from pre-set Tcl variables or the <code>VIVADO_PROJECT_MODE</code> / <code>VIVADO_PROJECT_DIR</code> env vars (default: <code>project</code> mode in <code>.</code>).</td></tr>
+<tr><td style="text-align: left"><a id="VivadoProjectInfo-xdc"></a>xdc</td><td style="text-align: left">depset[File]: transitive <code>.xdc</code> / <code>.sdc</code> / <code>.tcl</code> constraint files contributed via <code>vivado_project.data</code>, in the exact order the emitted script's <code>$PROJECT_DATA_FILES</code> loop reads them: plain files at their listed position, <code>xdc_library</code> targets expanded in place with their dep-first transitive closure. Empty when the project has no <code>data</code> entries. Enables aspects and future constraint-linting rules to walk the constraint set without reparsing the emitted TCL.</td></tr>
+</tbody></table>
+</div>
+<p><a id="VivadoReportsInfo"></a></p>
+<h2 id="vivadoreportsinfo"><a class="header" href="#vivadoreportsinfo">VivadoReportsInfo</a></h2>
+<pre>
+load("@rules_vivado//vivado:providers.bzl", "VivadoReportsInfo")
+
+VivadoReportsInfo(<a href="#VivadoReportsInfo-reports">reports</a>)
+</pre>
+<p>Maps the <code>reports</code> attr's caller-chosen output names to the declared File objects.</p>
+<p><strong>FIELDS</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="VivadoReportsInfo-reports"></a>reports</td><td style="text-align: left">dict[str, File]: caller-chosen output filename -&gt; declared File.</td></tr>
 </tbody></table>
 </div>
 <p><a id="VivadoRoutingCheckpointInfo"></a></p>
@@ -221,12 +357,17 @@ VivadoPlacementCheckpointInfo(<a href="#VivadoPlacementCheckpointInfo-checkpoint
 <pre>
 load("@rules_vivado//vivado:providers.bzl", "VivadoRoutingCheckpointInfo")
 
-VivadoRoutingCheckpointInfo(<a href="#VivadoRoutingCheckpointInfo-checkpoint">checkpoint</a>)
+VivadoRoutingCheckpointInfo(<a href="#VivadoRoutingCheckpointInfo-checkpoint">checkpoint</a>, <a href="#VivadoRoutingCheckpointInfo-input_files">input_files</a>, <a href="#VivadoRoutingCheckpointInfo-module_top">module_top</a>, <a href="#VivadoRoutingCheckpointInfo-part_number">part_number</a>, <a href="#VivadoRoutingCheckpointInfo-project_info">project_info</a>, <a href="#VivadoRoutingCheckpointInfo-tcl">tcl</a>)
 </pre>
-<p>Contains information at output of routing.</p>
+<p>Output of the routing phase (<code>vivado_routing</code>).</p>
 <p><strong>FIELDS</strong></p>
 <div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th></tr></thead><tbody>
-<tr><td style="text-align: left"><a id="VivadoRoutingCheckpointInfo-checkpoint"></a>checkpoint</td><td style="text-align: left">File: a Vivado post-route checkpoint (.dcp).</td></tr>
+<tr><td style="text-align: left"><a id="VivadoRoutingCheckpointInfo-checkpoint"></a>checkpoint</td><td style="text-align: left">File: the Vivado checkpoint (.dcp) this phase emitted.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoRoutingCheckpointInfo-input_files"></a>input_files</td><td style="text-align: left">depset[File]: transitive files needed to re-open the checkpoint with <code>read_checkpoint</code> + <code>link_design</code>. Includes the upstream project's <code>input_files</code>, the upstream checkpoint file itself, and any impl-XDC bundle.<br><br>Most consumers do NOT need this. A <code>.dcp</code> is self-contained, so every in-tree phase rule that only <code>open_checkpoint</code>s (<code>vivado_placement</code>, <code>vivado_place_optimize</code>, <code>vivado_routing</code>, <code>vivado_synthesis_optimize</code>, <code>vivado_bitstream</code>, <code>vivado_device_image</code>, <code>vivado_hw_platform</code>, <code>vivado_debug_probes</code>) stages just the <code>.dcp</code> and keeps the action's input set small. Pass <code>input_files.to_list()</code> only when an action re-links the design against its original sources or re-sources the project script.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoRoutingCheckpointInfo-module_top"></a>module_top</td><td style="text-align: left">str: top-module name (propagated from the originating <code>vivado_project.module_top</code>). May be <code>""</code> if the upstream provider carried no top.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoRoutingCheckpointInfo-part_number"></a>part_number</td><td style="text-align: left">str: Xilinx part string (propagated from the originating <code>vivado_project.part_number</code>). Consumers use this to open the checkpoint on the correct part.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoRoutingCheckpointInfo-project_info"></a>project_info</td><td style="text-align: left">VivadoProjectInfo: typed back-reference to the originating project. Enables consumers to trace a checkpoint back to design intent (module tops, block designs, constraints) without needing a separate <code>project = ...</code> attr on every downstream rule.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoRoutingCheckpointInfo-tcl"></a>tcl</td><td style="text-align: left">File: the fully-substituted TCL script the action sourced. Useful for debugging (<code>bazel build //foo:x</code> produces this) and for reproducing the phase outside Bazel (<code>vivado -source &lt;this-file&gt;</code>).</td></tr>
 </tbody></table>
 </div>
 <p><a id="VivadoSynthCheckpointInfo"></a></p>
@@ -234,12 +375,32 @@ VivadoRoutingCheckpointInfo(<a href="#VivadoRoutingCheckpointInfo-checkpoint">ch
 <pre>
 load("@rules_vivado//vivado:providers.bzl", "VivadoSynthCheckpointInfo")
 
-VivadoSynthCheckpointInfo(<a href="#VivadoSynthCheckpointInfo-checkpoint">checkpoint</a>)
+VivadoSynthCheckpointInfo(<a href="#VivadoSynthCheckpointInfo-checkpoint">checkpoint</a>, <a href="#VivadoSynthCheckpointInfo-input_files">input_files</a>, <a href="#VivadoSynthCheckpointInfo-module_top">module_top</a>, <a href="#VivadoSynthCheckpointInfo-part_number">part_number</a>, <a href="#VivadoSynthCheckpointInfo-project_info">project_info</a>, <a href="#VivadoSynthCheckpointInfo-tcl">tcl</a>,
+                          <a href="#VivadoSynthCheckpointInfo-impl_xdc">impl_xdc</a>)
 </pre>
-<p>Contains information at output of synthesis.</p>
+<p>Output of the synthesis phase (<code>vivado_synthesis</code> / <code>vivado_synthesis_optimize</code>).</p>
 <p><strong>FIELDS</strong></p>
 <div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th></tr></thead><tbody>
-<tr><td style="text-align: left"><a id="VivadoSynthCheckpointInfo-checkpoint"></a>checkpoint</td><td style="text-align: left">File: a Vivado synthesis checkpoint (.dcp).</td></tr>
+<tr><td style="text-align: left"><a id="VivadoSynthCheckpointInfo-checkpoint"></a>checkpoint</td><td style="text-align: left">File: the Vivado checkpoint (.dcp) this phase emitted.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoSynthCheckpointInfo-input_files"></a>input_files</td><td style="text-align: left">depset[File]: transitive files needed to re-open the checkpoint with <code>read_checkpoint</code> + <code>link_design</code>. Includes the upstream project's <code>input_files</code>, the upstream checkpoint file itself, and any impl-XDC bundle.<br><br>Most consumers do NOT need this. A <code>.dcp</code> is self-contained, so every in-tree phase rule that only <code>open_checkpoint</code>s (<code>vivado_placement</code>, <code>vivado_place_optimize</code>, <code>vivado_routing</code>, <code>vivado_synthesis_optimize</code>, <code>vivado_bitstream</code>, <code>vivado_device_image</code>, <code>vivado_hw_platform</code>, <code>vivado_debug_probes</code>) stages just the <code>.dcp</code> and keeps the action's input set small. Pass <code>input_files.to_list()</code> only when an action re-links the design against its original sources or re-sources the project script.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoSynthCheckpointInfo-module_top"></a>module_top</td><td style="text-align: left">str: top-module name (propagated from the originating <code>vivado_project.module_top</code>). May be <code>""</code> if the upstream provider carried no top.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoSynthCheckpointInfo-part_number"></a>part_number</td><td style="text-align: left">str: Xilinx part string (propagated from the originating <code>vivado_project.part_number</code>). Consumers use this to open the checkpoint on the correct part.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoSynthCheckpointInfo-project_info"></a>project_info</td><td style="text-align: left">VivadoProjectInfo: typed back-reference to the originating project. Enables consumers to trace a checkpoint back to design intent (module tops, block designs, constraints) without needing a separate <code>project = ...</code> attr on every downstream rule.</td></tr>
+<tr><td style="text-align: left"><a id="VivadoSynthCheckpointInfo-tcl"></a>tcl</td><td style="text-align: left">File: the fully-substituted TCL script the action sourced. Useful for debugging (<code>bazel build //foo:x</code> produces this) and for reproducing the phase outside Bazel (<code>vivado -source &lt;this-file&gt;</code>).</td></tr>
+<tr><td style="text-align: left"><a id="VivadoSynthCheckpointInfo-impl_xdc"></a>impl_xdc</td><td style="text-align: left">Optional[File]: Bundle of XDC content from source files marked <code>USED_IN_IMPLEMENTATION == True</code>. <code>synth_design</code> doesn't apply these and <code>write_checkpoint</code> only persists applied constraints, so downstream phases must <code>read_xdc &lt;bundle&gt;</code> before <code>opt_design</code> / <code>place_design</code> or the constraints are lost. May be <code>None</code>; consumers must tolerate that case.</td></tr>
+</tbody></table>
+</div>
+<p><a id="XdcInfo"></a></p>
+<h2 id="xdcinfo"><a class="header" href="#xdcinfo">XdcInfo</a></h2>
+<pre>
+load("@rules_vivado//vivado:providers.bzl", "XdcInfo")
+
+XdcInfo(<a href="#XdcInfo-srcs">srcs</a>)
+</pre>
+<p>Marker provider on <code>xdc_library</code> targets. Carries the transitive closure of the <code>.xdc</code> / <code>.sdc</code> files a downstream consumer should <code>read_xdc</code> in topological order (deps' srcs before the target's own srcs). Independent of any HDL info — <code>xdc_library</code> deliberately doesn't re-export VerilogInfo / VhdlInfo. Exists as a first-class provider so aspects can walk arbitrary dep graphs and pick out XDC-file contributors by filtering for this marker.</p>
+<p><strong>FIELDS</strong></p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: left">Description</th></tr></thead><tbody>
+<tr><td style="text-align: left"><a id="XdcInfo-srcs"></a>srcs</td><td style="text-align: left">depset[File]: transitive <code>.xdc</code>/<code>.sdc</code> files, deep-deps first (topological order). The rule's <code>DefaultInfo.files</code> is the same depset so this target also drops into <code>vivado_project.data</code> — the flattened order Bazel derives from <code>ctx.files.data</code> on a topological depset is what the emitted TCL's <code>$PROJECT_DATA_FILES</code> loop iterates.</td></tr>
 </tbody></table>
 </div>
                     </main>
@@ -282,6 +443,8 @@ VivadoSynthCheckpointInfo(<a href="#VivadoSynthCheckpointInfo-checkpoint">checkp
         <script src="book.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="mermaid.min.js"></script>
+        <script src="mermaid-init.js"></script>
 
 
     </div>
